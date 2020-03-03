@@ -6,7 +6,7 @@ from xml.dom import minidom
 import cv2
 import glob
 from tqdm import tqdm
-
+import xml.etree.ElementTree as ET
 
 def getDetections(detectionFilePath):
     with open(detectionFilePath, 'r') as f:
@@ -146,7 +146,7 @@ def get_single_frame_results(gt_boxes, pred_boxes, iou_thr):
     ious = []
     for ipb, pred_box in enumerate(pred_boxes):
         for igb, gt_box in enumerate(gt_boxes):
-            iou = calc_iou_individual(pred_box, gt_box)
+            iou = bb_iou(pred_box, gt_box)
             if iou > iou_thr:
                 gt_idx_thr.append(igb)
                 pred_idx_thr.append(ipb)
@@ -351,7 +351,7 @@ def addBboxesToFrames(framesPath, detections, groundTruth):
 
     prevFrame = 0
     frameMat = cv2.imread(frameFiles[0])
-    for item in tqdm(combinedList[0:5000]):
+    for item in tqdm(combinedList):
         frame = item['frame'] - 1
         if frame != prevFrame:
             out.write(frameMat)
@@ -363,3 +363,35 @@ def addBboxesToFrames(framesPath, detections, groundTruth):
         prevFrame = frame
     out.release()
 
+def getDetectionsPerFrame(detections):
+    detectionDict = {}
+    for detection in detections:
+        if detection['frame'] not in detectionDict.keys():
+            detectionDict[detection['frame']] = [detection]
+        else:
+            detectionDict[detection['frame']].append(detection)
+    return detectionDict
+
+def read_annotations(annotation_path, video_len):
+    """
+    Arguments:
+    capture: frames from video, opened as cv2.VideoCapture
+    root: parsed xml annotations as ET.parse(annotation_path).getroot()
+    """
+    root = ET.parse(annotation_path).getroot()
+    groundTruth = []
+
+    for frame in tqdm(range(video_len)):
+        for track in root.findall('track'):
+            label = track.attrib['label']
+            box = track.find("box[@frame='{0}']".format(str(frame)))
+            if box is not None and label == 'car':
+                detectionDict = {}
+                detectionDict['frame'] = int(box.attrib['frame']) + 1
+                detectionDict['left'] = int(float(box.attrib['xtl']))
+                detectionDict['top'] = int(float(box.attrib['ytl']))
+                detectionDict['width'] = int(float(box.attrib['xbr'])) - int(float(box.attrib['xtl']))
+                detectionDict['height'] = int(float(box.attrib['ybr'])) - int(float(box.attrib['ytl']))
+                groundTruth.append(detectionDict)
+
+    return groundTruth
