@@ -38,6 +38,6 @@ for detectorName, detectionFile in zip(detectorNames, detectionFileNames):
     plt.ylim((0, 1.0))
     plt.title('Results for ' + detectorName)
     plt.show()
-exit()
 #Generates a video with the bboxes for detections (blue) and gt (red)
 utils.addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth)
+exit()
