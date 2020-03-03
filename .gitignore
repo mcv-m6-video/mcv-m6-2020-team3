@@ -1,2 +1,6 @@
 .vscode/
+.idea/
 *.pyc
+Datasets/AICity/train/S03/c010/vdo.avi
+Pipfile
+bboxes.avi

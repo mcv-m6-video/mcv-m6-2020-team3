@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as pat
 from xml.dom import minidom
 import cv2
+import glob
+from tqdm import tqdm
 
 
 def getDetections(detectionFilePath):
@@ -15,12 +17,12 @@ def getDetections(detectionFilePath):
 def getDictFromDetection(detectionStr):
     detectionList = detectionStr.split(",")
     detectionDict = {}
-    detectionDict['frame'] = detectionList[0]
-    detectionDict['left'] = detectionList[2]
-    detectionDict['top'] = detectionList[3]
-    detectionDict['width'] = detectionList[4]
-    detectionDict['height'] = detectionList[5]
-    detectionDict['confidence'] = detectionList[6]
+    detectionDict['frame'] = int(float(detectionList[0]))
+    detectionDict['left'] = int(float(detectionList[2]))
+    detectionDict['top'] = int(float(detectionList[3]))
+    detectionDict['width'] = int(float(detectionList[4]))
+    detectionDict['height'] = int(float(detectionList[5]))
+    detectionDict['confidence'] = float(detectionList[6])
     return detectionDict
 
 
@@ -112,3 +114,49 @@ def read_xml_annotations(annotations_path):
                 bboxes[frame] = [[-1, xtl, ytl, height, width, random()]]
     return bboxes
 
+
+def sortDetectionsByKey(detectionList, key, decreasing=False):
+    sortedList = sorted(detectionList, key=lambda k: k[key], reverse=decreasing)
+    return sortedList
+
+
+def getBboxFromDetection(detection):
+    bbox = np.zeros(4)
+    bbox[0] = detection['left']
+    bbox[1] = detection['top']
+    bbox[2] = detection['left'] + detection['width']
+    bbox[3] = detection['left'] + detection['height']
+    return bbox
+
+def addBboxesToFrames(framesPath, detections, groundTruth):
+    #Show GT bboxes and detections
+    #Preprocess detections and GT
+    for detection in detections:
+        detection['isGT'] = False
+    for item in groundTruth:
+        item['isGT'] = True
+
+    combinedList = detections + groundTruth
+
+    combinedList = sortDetectionsByKey(combinedList, 'frame')
+
+    frameFiles = glob.glob(framesPath + '/*.jpg')
+    size = (1920, 1080)
+    fps = 10
+    out = cv2.VideoWriter('bboxes.avi',cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
+    
+    prevFrame = 0
+    frameMat = cv2.imread(frameFiles[0])
+    for item in tqdm(combinedList[0:5000]):
+        frame = item['frame'] - 1
+        if frame != prevFrame:
+            out.write(frameMat)
+            frameMat = cv2.imread(frameFiles[frame])
+        startPoint = (item['left'], item['top'])
+        endPoint = (startPoint[0] + item['width'], startPoint[1] + item['height'])
+        color = (255, 0, 0) if item['isGT'] is True else (0, 0, 255)
+        frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, 2)
+        prevFrame = frame
+    out.release()
+
+    
