@@ -175,12 +175,21 @@ def get_single_frame_results(gt_boxes, pred_boxes, iou_thr):
 
 
 def calc_precision_recall(img_results):
+<<<<<<< HEAD
     """Calculates precision and recall from the set of frames
     Args:
         img_results (dict): dictionary formatted like:
             {
                 'frame_id1': {'true_pos': int, 'false_pos': int, 'false_neg': int},
                 'frame_id2': ...
+=======
+    """Calculates precision and recall from the set of frames in video
+    Args:
+        img_results (dict): dictionary formatted like:
+            {
+                'img_id1': {'true_pos': int, 'false_pos': int, 'false_neg': int},
+                'img_id2': ...
+>>>>>>> sanket
                 ...
             }
     Returns:
@@ -208,7 +217,11 @@ def get_model_scores_map(pred_boxes):
     Args:
         pred_boxes (dict): dict of dicts of 'boxes' and 'scores'
     Returns:
+<<<<<<< HEAD
         dict: keys are model_scores and values are frame ids (usually filenames)
+=======
+        dict: keys are model_scores and values are image ids (usually filenames)
+>>>>>>> sanket
     """
     model_scores_map = {}
     for img_id, val in pred_boxes.items():
@@ -220,7 +233,11 @@ def get_model_scores_map(pred_boxes):
     return model_scores_map
 
 def get_avg_precision_at_iou(gt_boxes, pred_boxes, iou_thr=0.5):
+<<<<<<< HEAD
     """Calculates average precision for a given IoU threshold.
+=======
+    """Calculates average precision at given IoU threshold.
+>>>>>>> sanket
     Args:
         gt_boxes (list of list of floats): list of locations of ground truth
             objects as [xmin, ymin, xmax, ymax]
@@ -273,8 +290,13 @@ def get_avg_precision_at_iou(gt_boxes, pred_boxes, iou_thr=0.5):
             pred_boxes_pruned[img_id]['scores'] = pred_boxes_pruned[img_id]['scores'][start_idx:]
             pred_boxes_pruned[img_id]['boxes'] = pred_boxes_pruned[img_id]['boxes'][start_idx:]
 
+<<<<<<< HEAD
             # Recalculate image results for this frame
             img_results[img_id] = get_single_image_results(
+=======
+            # Recalculate image results for this image
+            img_results[img_id] = get_single_frame_results(
+>>>>>>> sanket
                 gt_boxes_img, pred_boxes_pruned[img_id]['boxes'], iou_thr)
 
         prec, rec = calc_precision_recall(img_results)
@@ -300,7 +322,12 @@ def get_avg_precision_at_iou(gt_boxes, pred_boxes, iou_thr=0.5):
         'recalls': recalls,
         'model_thrs': model_thrs}
 
+<<<<<<< HEAD
 def plot_precision_recall_curve(
+=======
+
+def plot_pr_curve(
+>>>>>>> sanket
     precisions, recalls, category='Cars', label=None, color=None, ax=None):
     """Simple plotting helper function"""
 
@@ -318,6 +345,7 @@ def plot_precision_recall_curve(
     ax.set_ylim([0.0,1.2])
     return ax
 
+<<<<<<< HEAD
 
 
 
@@ -328,3 +356,5 @@ def plot_precision_recall_curve(
 
 
 
+=======
+>>>>>>> sanket
