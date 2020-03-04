@@ -7,10 +7,10 @@
 
 ### Week 1
 
-Task 1: Detection metrics.
-Task 2: Detection metrics. Temporal analysis.
-Task 3: Optical flow evaluation metrics.
-Task 4: Visual representation optical flow.
+* Task 1: Detection metrics.
+* Task 2: Detection metrics. Temporal analysis.
+* Task 3: Optical flow evaluation metrics.
+* Task 4: Visual representation optical flow.
 
 
 In this week we setup the different metrics used and get used to the dataset
@@ -37,7 +37,7 @@ we used in the following weeks.
 
 
 
-[Week1-slides]: https://docs.google.com/presentation/d/1ZzyFj9YBbOZPxusEwLAxIa8NZBZmAYK6EMYJ-XPfAWc/edit?usp=sharing
+[Week1-slides]: https://docs.google.com/presentation/d/1AVxaY5epmUaZSwrJ3hu4xbOBTjpmJxgu0Pms7UMf96Q/edit#slide=id.p
 
 [Week2-slides]: 
 [team3-report]: 
@@ -63,3 +63,5 @@ Team 3
 |     Sanket Biswas   |    sanket.biswas@e-campus.uab.cat   |
 |  Gabriela Cordova |    gabrielaelizabeth.cordova@e-campus.uab.cat    |
 | Marc Oros Casanas  |marc.oros@e-campus.uab.cat |
+| Keyao Li | keyao.li@e-campus.uab.cat|
+
