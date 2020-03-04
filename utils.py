@@ -7,6 +7,7 @@ import cv2
 import glob
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
+from numpy import random
 
 def getDetections(detectionFilePath):
     with open(detectionFilePath, 'r') as f:
@@ -418,7 +419,7 @@ def add_noise_to_detections(gt_boxes_path, video_len):
                 detectionDict['height'] = int(float(box.attrib['ybr'])) - int(float(box.attrib['ytl']))
                 # groundTruth.append(detectionDict)
                 if random.uniform(0, 1) < prob_discard:
-                continue
+                    continue
                 # tl_x, tl_y = detectionDict['left'], detectionDict['top']
                 detectionDict['left'] += random.uniform(0, 1) * translation_factor
                 detectionDict['top'] += random.uniform(0, 1) * translation_factor
