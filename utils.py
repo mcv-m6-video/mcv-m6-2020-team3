@@ -7,6 +7,8 @@ import cv2
 import glob
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
+import os
+from copy import deepcopy
 
 def getDetections(detectionFilePath):
     with open(detectionFilePath, 'r') as f:
@@ -105,13 +107,13 @@ def read_xml_annotations(annotations_path):
             tly = int(float(element.getAttribute('tly')))
             brx = int(float(element.getAttribute('brx')))
             bry = int(float(element.getAttribute('bry')))
-            width = ybr - ytl
-            height = xbr - xtl
+            width = bry - tly
+            height = brx - tlx
 
             if frame in bboxes.keys():
-                bboxes[frame].append([-1, xtl, ytl, height, width, random()])
+                bboxes[frame].append([-1, tlx, tly, height, width, random()])
             else:
-                bboxes[frame] = [[-1, xtl, ytl, height, width, random()]]
+                bboxes[frame] = [[-1, tlx, tly, height, width, random()]]
     return bboxes
 
 
