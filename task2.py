@@ -38,6 +38,7 @@ for detectorName, detectionFile in zip(detectorNames, detectionFileNames):
     plt.ylim((0, 1.0))
     plt.title('Results for ' + detectorName)
     plt.show()
+    utils.addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth, detectorName)
 
 #Ground Truth with noise
 print("IoU over time for GT")
@@ -66,9 +67,7 @@ plt.plot(iousPerFrame)
 plt.ylim((0, 1.0))
 plt.title('Results for GT with noise')
 plt.show()
-exit()
-
 
 #Generates a video with the bboxes for detections (blue) and gt (red)
-utils.addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth)
+utils.addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth, "ground_truth")
 exit()
