@@ -64,7 +64,7 @@ def get_noisy_bboxes(discard_probability_bbox=0.1, noise_range=20):
     The function returns a dictionary with the bounding boxes for each frame where the frame number is the key. It also returns a dictionary
     that contains noisy annotations to the ground truth data. 
     """
-    with open('../Datasets/AICity_data/train/S03/c010/gt/gt.txt') as f:
+    with open('./Datasets/AICity/train/S03/c010/gt/gt.txt') as f:
         lines = f.readlines()
         bboxes = dict() # stores the ground truth bboxes for each frame in the dict
         bboxes_noisy = dict() # stores the noisy annotations to the ground truth data

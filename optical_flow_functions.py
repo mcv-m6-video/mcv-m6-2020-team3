@@ -90,7 +90,7 @@ if __name__ == "__main__":
     estimation2 = "./Datasets/results_opticalflow_kitti/results/LKflow_000157_10.png"
     gt2 = "./Datasets/data_stereo_flow/training/flow_noc/000157_10.png"
 
-    Opflow_test, Opflow_gt  = read_Opflow(estimation1, gt1)
+    Opflow_test, Opflow_gt  = read_Opflow(estimation2, gt2)
     Opflow_error = calculate_error(Opflow_test, Opflow_gt)
 
     msen = calculate_msen(Opflow_error, Opflow_gt)
