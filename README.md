@@ -37,7 +37,7 @@ we used in the following weeks.
 
 
 
-[Week1-slides]: https://docs.google.com/presentation/d/1ZzyFj9YBbOZPxusEwLAxIa8NZBZmAYK6EMYJ-XPfAWc/edit?usp=sharing
+[Week1-slides]: https://docs.google.com/presentation/d/1AVxaY5epmUaZSwrJ3hu4xbOBTjpmJxgu0Pms7UMf96Q/edit#slide=id.p
 
 [Week2-slides]: 
 [team3-report]: 
