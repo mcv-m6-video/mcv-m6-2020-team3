@@ -7,8 +7,6 @@ import cv2
 import glob
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
-import os
-from copy import deepcopy
 
 def getDetections(detectionFilePath):
     with open(detectionFilePath, 'r') as f:
@@ -64,7 +62,7 @@ def get_noisy_bboxes(discard_probability_bbox=0.1, noise_range=20):
     The function returns a dictionary with the bounding boxes for each frame where the frame number is the key. It also returns a dictionary
     that contains noisy annotations to the ground truth data. 
     """
-    with open('../Datasets/AICity_data/train/S03/c010/gt/gt.txt') as f:
+    with open('Datasets/AICity/aicity_annotations.xml') as f:
         lines = f.readlines()
         bboxes = dict() # stores the ground truth bboxes for each frame in the dict
         bboxes_noisy = dict() # stores the noisy annotations to the ground truth data
@@ -107,13 +105,13 @@ def read_xml_annotations(annotations_path):
             tly = int(float(element.getAttribute('tly')))
             brx = int(float(element.getAttribute('brx')))
             bry = int(float(element.getAttribute('bry')))
-            width = bry - tly
-            height = brx - tlx
+            width = ybr - ytl
+            height = xbr - xtl
 
             if frame in bboxes.keys():
-                bboxes[frame].append([-1, tlx, tly, height, width, random()])
+                bboxes[frame].append([-1, xtl, ytl, height, width, random()])
             else:
-                bboxes[frame] = [[-1, tlx, tly, height, width, random()]]
+                bboxes[frame] = [[-1, xtl, ytl, height, width, random()]]
     return bboxes
 
 
@@ -397,3 +395,43 @@ def read_annotations(annotation_path, video_len):
                 groundTruth.append(detectionDict)
 
     return groundTruth
+
+def add_noise_to_detections(gt_boxes_path, video_len):
+
+    noisy_gt_boxes = []
+    rescaling_factor = [0.5, 1]
+    translation_factor = 30
+    prob_discard = 0.1
+    root = ET.parse(gt_boxes_path).getroot()
+    groundTruth = []
+
+    for frame in tqdm(range(video_len)):
+        for track in root.findall('track'):
+            label = track.attrib['label']
+            box = track.find("box[@frame='{0}']".format(str(frame)))
+            if box is not None and label == 'car':
+                detectionDict = {}
+                detectionDict['frame'] = int(box.attrib['frame']) + 1
+                detectionDict['left'] = int(float(box.attrib['xtl']))
+                detectionDict['top'] = int(float(box.attrib['ytl']))
+                detectionDict['width'] = int(float(box.attrib['xbr'])) - int(float(box.attrib['xtl']))
+                detectionDict['height'] = int(float(box.attrib['ybr'])) - int(float(box.attrib['ytl']))
+                # groundTruth.append(detectionDict)
+                if random.uniform(0, 1) < prob_discard:
+                continue
+                # tl_x, tl_y = detectionDict['left'], detectionDict['top']
+                detectionDict['left'] += random.uniform(0, 1) * translation_factor
+                detectionDict['top'] += random.uniform(0, 1) * translation_factor
+                detectionDict['width'] = detectionDict['width'] * random.uniform(rescaling_factor[0], rescaling_factor[1])
+                detectionDict['height'] = detectionDict['height'] * random.uniform(rescaling_factor[0], rescaling_factor[1])
+
+                noisy_gt_boxes.append(detectionDict)
+
+    return noisy_gt_boxes
+
+
+
+        
+
+
+    
