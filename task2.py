@@ -3,6 +3,8 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
+
+
 detectionFileFolder = 'Datasets/AICity/train/S03/c010/det/'
 detectionFileNames = ['det_mask_rcnn.txt', 'det_ssd512.txt', 'det_yolo3.txt']
 detectorNames = ['Mask RCNN', 'SSD512', 'YOLO3']
@@ -16,6 +18,7 @@ for detectorName, detectionFile in zip(detectorNames, detectionFileNames):
     sortedDetections = utils.sortDetectionsByKey(detections, 'confidence', decreasing=True)
     detectionsPerFrame = utils.getDetectionsPerFrame(detections)
     iousPerFrame = np.zeros(len(detectionsPerFrame.keys()))
+    utils.calculate_mAP(groundTruth, detections, IoU_threshold=0.5)
     for frame in tqdm(detectionsPerFrame.keys()):
         detectionBboxes = [utils.getBboxFromDetection(detection) for detection in detectionsPerFrame[frame]] if frame in detectionsPerFrame.keys() else []
         gtBboxes = [utils.getBboxFromDetection(gtItem) for gtItem in groundTruthPerFrame[frame]] if frame in groundTruthPerFrame.keys() else []

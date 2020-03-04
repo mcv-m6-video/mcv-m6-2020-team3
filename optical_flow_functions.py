@@ -80,7 +80,7 @@ def plot_Opflow_error(Opflow_error, Opflow_gt, bins = 20):
     plt.title('Density of Optical Flow Error')
     plt.xlabel('Optical Flow error')
     plt.ylabel('The Percentage of Pixels')
-    plt.savefig('results/Opflow_error.png')
+    plt.savefig('results/Opflow_error_2.png')
     plt.show()
 
 if __name__ == "__main__":
