@@ -7,8 +7,12 @@ import cv2
 import glob
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
+
 from copy import deepcopy
 from collections import defaultdict
+
+from numpy import random
+
 
 def getDetections(detectionFilePath):
     with open(detectionFilePath, 'r') as f:
@@ -338,7 +342,7 @@ def getBboxFromDetection(detection):
     bbox[3] = detection['left'] + detection['height']
     return bbox
 
-def addBboxesToFrames(framesPath, detections, groundTruth):
+def addBboxesToFrames(framesPath, detections, groundTruth, name):
     #Show GT bboxes and detections
     #Preprocess detections and GT
     for detection in detections:
@@ -353,7 +357,7 @@ def addBboxesToFrames(framesPath, detections, groundTruth):
     frameFiles = glob.glob(framesPath + '/*.jpg')
     size = (1920, 1080)
     fps = 10
-    out = cv2.VideoWriter('bboxes.avi',cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
+    out = cv2.VideoWriter(name + '.avi',cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
 
     prevFrame = 0
     frameMat = cv2.imread(frameFiles[0])
@@ -362,8 +366,8 @@ def addBboxesToFrames(framesPath, detections, groundTruth):
         if frame != prevFrame:
             out.write(frameMat)
             frameMat = cv2.imread(frameFiles[frame])
-        startPoint = (item['left'], item['top'])
-        endPoint = (startPoint[0] + item['width'], startPoint[1] + item['height'])
+        startPoint = (int(item['left']), int(item['top']))
+        endPoint = (int(startPoint[0] + item['width']), int(startPoint[1] + item['height']))
         color = (255, 0, 0) if item['isGT'] is True else (0, 0, 255)
         frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, 2)
         prevFrame = frame

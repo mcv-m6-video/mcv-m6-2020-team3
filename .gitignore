@@ -3,9 +3,13 @@
 *.pyc
 Datasets/AICity/train/S03/c010/vdo.avi
 Pipfile
-bboxes.avi
+
 *.txt
 *.png
 Datasets/data_stereo_flow/testing/.zip
 Datasets/results_opticalflow_kitti/__MACOSX/results/._.DS_Store
 Datasets/results_opticalflow_kitti/results/.DS_Store
+
+*.avi
+*.gif
+
