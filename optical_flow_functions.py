@@ -80,7 +80,7 @@ def plot_Opflow_error(Opflow_error, Opflow_gt, bins = 20):
     plt.title('Density of Optical Flow Error')
     plt.xlabel('Optical Flow error')
     plt.ylabel('The Percentage of Pixels')
-    plt.savefig('results/Opflow_error.png')
+    plt.savefig('results/Opflow_error_2.png')
     plt.show()
 
 if __name__ == "__main__":
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     estimation2 = "./Datasets/results_opticalflow_kitti/results/LKflow_000157_10.png"
     gt2 = "./Datasets/data_stereo_flow/training/flow_noc/000157_10.png"
 
-    Opflow_test, Opflow_gt  = read_Opflow(estimation2, gt2)
+    Opflow_test, Opflow_gt  = read_Opflow(estimation1, gt1)
     Opflow_error = calculate_error(Opflow_test, Opflow_gt)
 
     msen = calculate_msen(Opflow_error, Opflow_gt)

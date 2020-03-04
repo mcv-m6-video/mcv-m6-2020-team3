@@ -1,4 +1,4 @@
-from random import randrange, random
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as pat
@@ -7,6 +7,8 @@ import cv2
 import glob
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
+from copy import deepcopy
+from collections import defaultdict
 
 def getDetections(detectionFilePath):
     with open(detectionFilePath, 'r') as f:
@@ -323,6 +325,10 @@ def sortDetectionsByKey(detectionList, key, decreasing=False):
     sortedList = sorted(detectionList, key=lambda k: k[key], reverse=decreasing)
     return sortedList
 
+def shuffle_detectionList(detectionList):
+    random.shuffle(detectionList)
+    return detectionList
+
 
 def getBboxFromDetection(detection):
     bbox = np.zeros(4)
@@ -417,21 +423,126 @@ def add_noise_to_detections(gt_boxes_path, video_len):
                 detectionDict['width'] = int(float(box.attrib['xbr'])) - int(float(box.attrib['xtl']))
                 detectionDict['height'] = int(float(box.attrib['ybr'])) - int(float(box.attrib['ytl']))
                 # groundTruth.append(detectionDict)
-                if random.uniform(0, 1) < prob_discard:
-                continue
+                if np.random.uniform(0, 1) < prob_discard:
+                    continue
                 # tl_x, tl_y = detectionDict['left'], detectionDict['top']
-                detectionDict['left'] += random.uniform(0, 1) * translation_factor
-                detectionDict['top'] += random.uniform(0, 1) * translation_factor
-                detectionDict['width'] = detectionDict['width'] * random.uniform(rescaling_factor[0], rescaling_factor[1])
-                detectionDict['height'] = detectionDict['height'] * random.uniform(rescaling_factor[0], rescaling_factor[1])
+                detectionDict['left'] += np.random.uniform(0, 1) * translation_factor
+                detectionDict['top'] += np.random.uniform(0, 1) * translation_factor
+                detectionDict['width'] = detectionDict['width'] * np.random.uniform(rescaling_factor[0], rescaling_factor[1])
+                detectionDict['height'] = detectionDict['height'] * np.random.uniform(rescaling_factor[0], rescaling_factor[1])
 
                 noisy_gt_boxes.append(detectionDict)
 
     return noisy_gt_boxes
 
 
+def box(o):
+    return [o['left'], o['top'], o['left'] + o['width'], o['top'] + o['height']]
 
-        
+
+def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5, verbose = True):
+
+    groundtruth_list = deepcopy(groundtruth_list_original)
+
+    # Sort detections by confidence
+    detections_list.sort(key=lambda x: x['confidence'], reverse=True)
+    # Save number of groundtruth labels
+    groundtruth_size = len(groundtruth_list)
+
+    TP = 0
+    FP = 0
+    FN = 0
+    precision = list(); recall = list()
+
+    # to compute mAP
+    threshold = 1
+    checkpoint = 0
+    temp = 1000
+
+    for n, detection in enumerate(detections_list):
+        match_flag = False
+        if threshold != temp:
+            #print(threshold)
+            temp = threshold
+
+        # Get groundtruth of the target frame
+        gt_on_frame = [x for x in groundtruth_list if x['frame'] == detection['frame']]
+        gt_bboxes = [(box(o), 1) for o in gt_on_frame]
+
+        #print(gt_bboxes)
+        for gt_bbox in gt_bboxes:
+            iou = bb_iou(gt_bbox[0], box(detection))
+            if iou > IoU_threshold and gt_bbox[1] > 0.9:
+                match_flag = True
+                TP += 1
+                gt_used = next((x for x in groundtruth_list if x['frame'] == detection['frame'] and box(x) == gt_bbox[0]), None)
+                gt_used['confidence'] = 0
+                break
+
+        if match_flag == False:
+            FP += 1
+
+        # Save metrics
+        precision.append(TP/(TP+FP))
+        if groundtruth_size:
+            recall.append(TP/groundtruth_size)
+
+    plt.figure(1)
+    plt.plot(recall, precision,'r--')
+    plt.xlim((0, 1.0))
+    plt.ylim((0, 1.0))
+    plt.title('Precision - recall curve')
+
+    recall_step = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+    precision_step = [0] * 11
+    max_precision_i = 0.0
+    for i in range(len(recall)):
+        recall_i = recall[-(i+1)]
+        precision_i = precision[-(i+1)]
+        max_precision_i = max(max_precision_i, precision_i)
+        for j in range(len(recall_step)):
+            if recall_i > recall_step[j]:
+                precision_step[j] = max_precision_i
+            else:
+                break
+
+    plt.plot(recall_step, precision_step,'g--')
+    plt.show()
+
+    # Check false negatives
+    groups = defaultdict(list)
+    for obj in groundtruth_list:
+        groups[obj['frame']].append(obj)
+    grouped_groundtruth_list = groups.values()
+
+    for groundtruth in grouped_groundtruth_list:
+        detection_on_frame = [x for x in detections_list if x['frame'] == groundtruth[0]['frame']]
+        detection_bboxes = [box(o) for o in detection_on_frame]
+
+        groundtruth_bboxes = [box(o) for o in groundtruth]
+
+        results = get_single_frame_results(detection_bboxes, groundtruth_bboxes, IoU_threshold)
+        FN_temp = results['false_neg']
+
+        FN += FN_temp
+
+    if verbose:
+        print("TP={} FN={} FP={}".format(TP, FN, FP))
+
+    recall = 0
+    precision = 0
+    F1_score = 0
+    if TP > 0:
+        precision = float(TP) / float(TP + FP)
+        recall = float(TP) / float(TP + FN)
+        F1_score = 2 * recall * precision / (recall + precision)
+    #print(TP+FP)
+    #print("precision:{}".format(precision))
+    #print("recall:{}".format(recall))
+    mAP = sum(precision_step)/11
+    if verbose:
+        print("mAP: {}".format(mAP))
+
+    return precision, recall, precision_step, F1_score, mAP
 
 
-    
