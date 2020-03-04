@@ -251,10 +251,11 @@ def read_sequences(path):
 
 
 if __name__ == '__main__':
-    ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    opticalflow_path = ROOT_DIR+'/datasets/results_opticalflow_kitti/results/'
-    sequences_path = ROOT_DIR+'/datasets/data_stereo_flow/training/image_0/'
-    gt_path = ROOT_DIR+'/datasets/data_stereo_flow/training/flow_noc/'
+    ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+    opticalflow_path = ROOT_DIR+'/Datasets/results_opticalflow_kitti/results/'
+    sequences_path = ROOT_DIR+'/Datasets/data_stereo_flow/training/image_0/'
+    gt_path = ROOT_DIR+'/Datasets/data_stereo_flow/training/flow_noc/'
     save_path = ROOT_DIR+'/plots/'
 
     if not os.path.exists(save_path):
