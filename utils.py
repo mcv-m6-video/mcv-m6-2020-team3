@@ -406,12 +406,12 @@ def read_annotations(annotation_path, video_len):
 
     return groundTruth
 
-def add_noise_to_detections(gt_boxes_path, video_len):
+def add_noise_to_detections(gt_boxes_path, video_len, dropProb=0.1):
 
     noisy_gt_boxes = []
     rescaling_factor = [0.5, 1]
     translation_factor = 30
-    prob_discard = 0.1
+    prob_discard = dropProb
     root = ET.parse(gt_boxes_path).getroot()
     groundTruth = []
 
@@ -426,6 +426,7 @@ def add_noise_to_detections(gt_boxes_path, video_len):
                 detectionDict['top'] = int(float(box.attrib['ytl']))
                 detectionDict['width'] = int(float(box.attrib['xbr'])) - int(float(box.attrib['xtl']))
                 detectionDict['height'] = int(float(box.attrib['ybr'])) - int(float(box.attrib['ytl']))
+                detectionDict['confidence'] = 0.3 + np.random.uniform(0, 0.7)
                 # groundTruth.append(detectionDict)
                 if np.random.uniform(0, 1) < prob_discard:
                     continue
@@ -463,7 +464,7 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
     checkpoint = 0
     temp = 1000
 
-    for n, detection in enumerate(detections_list):
+    for n, detection in tqdm(enumerate(detections_list)):
         match_flag = False
         if threshold != temp:
             #print(threshold)
