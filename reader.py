@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from tqdm import tqdm
 import Detection
-
+'''https://github.com/mcv-m6-video/mcv-m6-2019-team3'''
 
 def read_detections(path: str):
     # [frame, -1, left, top, width, height, conf, -1, -1, -1]
