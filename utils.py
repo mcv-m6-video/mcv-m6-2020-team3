@@ -406,12 +406,13 @@ def read_annotations(annotation_path, video_len):
 
     return groundTruth
 
-def add_noise_to_detections(gt_boxes_path, video_len, dropProb=0.1):
+def add_noise_to_detections(gt_boxes_path, video_len,
+                            rescaling_factor = [0.5, 1], translation_factor = 30, prob_discard = 0.1):
 
     noisy_gt_boxes = []
-    rescaling_factor = [0.5, 1]
-    translation_factor = 30
-    prob_discard = dropProb
+    # rescaling_factor = [0.5, 1]
+    # translation_factor = 30
+    # prob_discard = 0.1
     root = ET.parse(gt_boxes_path).getroot()
     groundTruth = []
 
@@ -426,7 +427,6 @@ def add_noise_to_detections(gt_boxes_path, video_len, dropProb=0.1):
                 detectionDict['top'] = int(float(box.attrib['ytl']))
                 detectionDict['width'] = int(float(box.attrib['xbr'])) - int(float(box.attrib['xtl']))
                 detectionDict['height'] = int(float(box.attrib['ybr'])) - int(float(box.attrib['ytl']))
-                detectionDict['confidence'] = 0.3 + np.random.uniform(0, 0.7)
                 # groundTruth.append(detectionDict)
                 if np.random.uniform(0, 1) < prob_discard:
                     continue
@@ -445,12 +445,14 @@ def box(o):
     return [o['left'], o['top'], o['left'] + o['width'], o['top'] + o['height']]
 
 
-def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5, verbose = True):
+def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
+                  have_confidence = True, verbose = False):
 
     groundtruth_list = deepcopy(groundtruth_list_original)
 
     # Sort detections by confidence
-    detections_list.sort(key=lambda x: x['confidence'], reverse=True)
+    if have_confidence:
+        detections_list.sort(key=lambda x: x['confidence'], reverse=True)
     # Save number of groundtruth labels
     groundtruth_size = len(groundtruth_list)
 
@@ -472,7 +474,7 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
 
         # Get groundtruth of the target frame
         gt_on_frame = [x for x in groundtruth_list if x['frame'] == detection['frame']]
-        gt_bboxes = [(box(o), 1) for o in gt_on_frame]
+        gt_bboxes = [(box(o), o['confidence'] if ('confidence' in o) else 1) for o in gt_on_frame]
 
         #print(gt_bboxes)
         for gt_bbox in gt_bboxes:
@@ -492,13 +494,9 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
         if groundtruth_size:
             recall.append(TP/groundtruth_size)
 
-    plt.figure(1)
-    plt.plot(recall, precision,'r--')
-    plt.xlim((0, 1.0))
-    plt.ylim((0, 1.0))
-    plt.title('Precision - recall curve')
 
-    recall_step = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+
+    recall_step = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
     precision_step = [0] * 11
     max_precision_i = 0.0
     for i in range(len(recall)):
@@ -506,37 +504,40 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
         precision_i = precision[-(i+1)]
         max_precision_i = max(max_precision_i, precision_i)
         for j in range(len(recall_step)):
-            if recall_i > recall_step[j]:
+            if recall_i >= recall_step[j]:
                 precision_step[j] = max_precision_i
             else:
                 break
-
-    plt.plot(recall_step, precision_step,'g--')
-    plt.show()
+    if verbose:
+        plt.figure(1)
+        plt.plot(recall, precision,'r--')
+        plt.xlim((0, 1.0))
+        plt.ylim((0, 1.0))
+        plt.title('Precision - recall curve')
+        plt.plot(recall_step, precision_step,'g--')
+        plt.show()
 
     # Check false negatives
-    groups = defaultdict(list)
-    for obj in groundtruth_list:
-        groups[obj['frame']].append(obj)
-    grouped_groundtruth_list = groups.values()
-
-    for groundtruth in grouped_groundtruth_list:
-        detection_on_frame = [x for x in detections_list if x['frame'] == groundtruth[0]['frame']]
-        detection_bboxes = [box(o) for o in detection_on_frame]
-
-        groundtruth_bboxes = [box(o) for o in groundtruth]
-
-        results = get_single_frame_results(detection_bboxes, groundtruth_bboxes, IoU_threshold)
-        FN_temp = results['false_neg']
-
-        FN += FN_temp
+    FN = len(detections_list) - TP
+    # groups = defaultdict(list)
+    # for obj in groundtruth_list:
+    #     groups[obj['frame']].append(obj)
+    # grouped_groundtruth_list = groups.values()
+    #
+    # for groundtruth in grouped_groundtruth_list:
+    #     detection_on_frame = [x for x in detections_list if x['frame'] == groundtruth[0]['frame']]
+    #     detection_bboxes = [box(o) for o in detection_on_frame]
+    #
+    #     groundtruth_bboxes = [box(o) for o in groundtruth]
+    #
+    #     results = get_single_frame_results(detection_bboxes, groundtruth_bboxes, IoU_threshold)
+    #     FN_temp = results['false_neg']
+    #
+    #     FN += FN_temp
 
     if verbose:
         print("TP={} FN={} FP={}".format(TP, FN, FP))
 
-    recall = 0
-    precision = 0
-    F1_score = 0
     if TP > 0:
         precision = float(TP) / float(TP + FP)
         recall = float(TP) / float(TP + FN)
@@ -545,9 +546,10 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
     #print("precision:{}".format(precision))
     #print("recall:{}".format(recall))
     mAP = sum(precision_step)/11
-    if verbose:
-        print("mAP: {}".format(mAP))
+    #if verbose:
+    print("mAP: {}".format(mAP))
 
-    return precision, recall, precision_step, F1_score, mAP
+    #return precision, recall, precision_step, F1_score, mAP
+    return mAP
 
 
