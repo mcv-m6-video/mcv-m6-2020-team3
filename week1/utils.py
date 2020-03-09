@@ -1,3 +1,4 @@
+import os
 import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,19 +8,16 @@ import cv2
 import glob
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
-
 from copy import deepcopy
 from collections import defaultdict
-
 from numpy import random
-
+from skimage.measure import label, regionprops
+from detection import Detection
 
 def getDetections(detectionFilePath):
     with open(detectionFilePath, 'r') as f:
         detections = [getDictFromDetection(line) for line in f]
     return detections
-
-
 def getDictFromDetection(detectionStr):
     detectionList = detectionStr.split(",")
     detectionDict = {}
@@ -30,8 +28,6 @@ def getDictFromDetection(detectionStr):
     detectionDict['height'] = int(float(detectionList[5]))
     detectionDict['confidence'] = float(detectionList[6])
     return detectionDict
-
-
 def bb_iou(bboxA, bboxB):
     # This implements a function to compute the intersection over union of two bounding boxes, also known as the Jaccard Index.
     # I've adapted this code from the M1 project code we implemented. The Format of the bboxes is [tlx, tly, brx, bry, ...], where tl and br
@@ -60,15 +56,13 @@ def bb_iou(bboxA, bboxB):
 
     # returns the intersection over union value
     return iou
-
-
-
 def get_noisy_bboxes(discard_probability_bbox=0.1, noise_range=20):
     """
     The function returns a dictionary with the bounding boxes for each frame where the frame number is the key. It also returns a dictionary
     that contains noisy annotations to the ground truth data. 
     """
-    with open('./Datasets/AICity/train/S03/c010/gt/gt.txt') as f:
+    ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+    with open(ROOT_DIR+'/../Datasets/AICity/train/S03/c010/gt/gt.txt') as f:
         lines = f.readlines()
         bboxes = dict() # stores the ground truth bboxes for each frame in the dict
         bboxes_noisy = dict() # stores the noisy annotations to the ground truth data
@@ -95,8 +89,6 @@ def get_noisy_bboxes(discard_probability_bbox=0.1, noise_range=20):
                     bboxes_noisy[line[0]] = [content]
 
     return bboxes, bboxes_noisy, num_of_instances
-
-
 def read_xml_annotations(annotations_path):
     '''The function reads the xml files and returns the corresponding bboxes for every frame.'''
     files = os.listdir(annotations_path)
@@ -119,8 +111,6 @@ def read_xml_annotations(annotations_path):
             else:
                 bboxes[frame] = [[-1, xtl, ytl, height, width, random()]]
     return bboxes
-
-
 def get_single_frame_results(gt_boxes, pred_boxes, iou_thr):
     """Calculates number of true_pos, false_pos, false_neg from single batch of boxes.
     Args:
@@ -179,8 +169,6 @@ def get_single_frame_results(gt_boxes, pred_boxes, iou_thr):
         fn = len(gt_boxes) - len(gt_match_idx)
 
     return {'true_pos': tp, 'false_pos': fp, 'false_neg': fn}
-
-
 def calc_precision_recall(img_results):
     """Calculates precision and recall from the set of frames in video
     Args:
@@ -209,7 +197,6 @@ def calc_precision_recall(img_results):
         recall = 0.0
 
     return (precision, recall)
-
 def get_model_scores_map(pred_boxes):
     """Creates a dictionary of from model_scores to frame ids.
     Args:
@@ -225,7 +212,6 @@ def get_model_scores_map(pred_boxes):
             else:
                 model_scores_map[score].append(img_id)
     return model_scores_map
-
 def get_avg_precision_at_iou(gt_boxes, pred_boxes, iou_thr=0.5):
     """Calculates average precision at given IoU threshold.
     Args:
@@ -306,10 +292,7 @@ def get_avg_precision_at_iou(gt_boxes, pred_boxes, iou_thr=0.5):
         'precisions': precisions,
         'recalls': recalls,
         'model_thrs': model_thrs}
-
-
-def plot_pr_curve(
-    precisions, recalls, category='Cars', label=None, color=None, ax=None):
+def plot_pr_curve(precisions, recalls, category='Cars', label=None, color=None, ax=None):
     """Simple plotting helper function"""
 
     if ax is None:
@@ -328,12 +311,9 @@ def plot_pr_curve(
 def sortDetectionsByKey(detectionList, key, decreasing=False):
     sortedList = sorted(detectionList, key=lambda k: k[key], reverse=decreasing)
     return sortedList
-
 def shuffle_detectionList(detectionList):
     random.shuffle(detectionList)
     return detectionList
-
-
 def getBboxFromDetection(detection):
     bbox = np.zeros(4)
     bbox[0] = detection['left']
@@ -341,7 +321,6 @@ def getBboxFromDetection(detection):
     bbox[2] = detection['left'] + detection['width']
     bbox[3] = detection['left'] + detection['height']
     return bbox
-
 def addBboxesToFrames(framesPath, detections, groundTruth, name):
     #Show GT bboxes and detections
     #Preprocess detections and GT
@@ -372,7 +351,6 @@ def addBboxesToFrames(framesPath, detections, groundTruth, name):
         frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, 2)
         prevFrame = frame
     out.release()
-
 def getDetectionsPerFrame(detections):
     detectionDict = {}
     for detection in detections:
@@ -381,7 +359,6 @@ def getDetectionsPerFrame(detections):
         else:
             detectionDict[detection['frame']].append(detection)
     return detectionDict
-
 def read_annotations(annotation_path, video_len):
     """
     Arguments:
@@ -405,10 +382,7 @@ def read_annotations(annotation_path, video_len):
                 groundTruth.append(detectionDict)
 
     return groundTruth
-
-def add_noise_to_detections(gt_boxes_path, video_len,
-                            rescaling_factor = [0.5, 1], translation_factor = 30, prob_discard = 0.1):
-
+def add_noise_to_detections(gt_boxes_path, video_len, rescaling_factor = [0.5, 1], translation_factor = 30, prob_discard = 0.1):
     noisy_gt_boxes = []
     # rescaling_factor = [0.5, 1]
     # translation_factor = 30
@@ -439,14 +413,9 @@ def add_noise_to_detections(gt_boxes_path, video_len,
                 noisy_gt_boxes.append(detectionDict)
 
     return noisy_gt_boxes
-
-
 def box(o):
     return [o['left'], o['top'], o['left'] + o['width'], o['top'] + o['height']]
-
-
-def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
-                  have_confidence = True, verbose = False):
+def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5, have_confidence = True, verbose = False):
 
     groundtruth_list = deepcopy(groundtruth_list_original)
 
@@ -551,5 +520,4 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
 
     #return precision, recall, precision_step, F1_score, mAP
     return mAP
-
 
