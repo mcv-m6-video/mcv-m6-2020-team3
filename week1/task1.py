@@ -7,7 +7,7 @@ detectionFileFolder = 'Datasets/AICity/train/S03/c010/det/'
 detectionFileNames = ['det_mask_rcnn.txt', 'det_ssd512.txt', 'det_yolo3.txt']
 detectorNames = ['Mask RCNN', 'SSD512', 'YOLO3']
 
-bboxes, bboxes_noisy, num_of_instances = utils.get_noisy_bboxes(discard_probability_bbox=0.1, noise_range=20)
+#bboxes, bboxes_noisy, num_of_instances = utils.get_noisy_bboxes(discard_probability_bbox=0.1, noise_range=20)
 
 
 # print("Reading annotations...")
