@@ -133,37 +133,37 @@ def foreground_gaussian(img, model_mean, model_std, alpha):
     return foreground
 
 
-# def fill_holes(mask):
-#     im_floodfill = mask.astype(np.uint8).copy()
-#     h, w = im_floodfill.shape[:2]
-#     filling_mask = np.zeros((h + 2, w + 2), np.uint8)
-#     cv2.floodFill(im_floodfill, filling_mask, (0, 0), 1)
-#     return mask.astype(np.uint8) | (1 - im_floodfill)
-#
-#
-# def filter_noise(mask):
-#     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (50, 50))
-#     mask = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_OPEN, kernel)
-#     mask = cv2.medianBlur(mask, 7)
-#     return mask
-
 def fill_holes(mask):
     im_floodfill = mask.astype(np.uint8).copy()
     h, w = im_floodfill.shape[:2]
     filling_mask = np.zeros((h + 2, w + 2), np.uint8)
     cv2.floodFill(im_floodfill, filling_mask, (0, 0), 1)
-
     return mask.astype(np.uint8) | (1 - im_floodfill)
 
+
 def filter_noise(mask):
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
-    mask = cv2.medianBlur(mask, 9)
-    #mask = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_OPEN, kernel)
-    mask = cv2.erode(mask, kernel, iterations=1)
-    mask = cv2.dilate(mask, kernel2, iterations=1)
-    mask = cv2.erode(mask, kernel)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (50, 50))
+    mask = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_OPEN, kernel)
+    mask = cv2.medianBlur(mask, 7)
     return mask
+
+# def fill_holes(mask):
+#     im_floodfill = mask.astype(np.uint8).copy()
+#     h, w = im_floodfill.shape[:2]
+#     filling_mask = np.zeros((h + 2, w + 2), np.uint8)
+#     cv2.floodFill(im_floodfill, filling_mask, (0, 0), 1)
+#
+#     return mask.astype(np.uint8) | (1 - im_floodfill)
+#
+# def filter_noise(mask):
+#     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+#     kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
+#     mask = cv2.medianBlur(mask, 9)
+#     #mask = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_OPEN, kernel)
+#     mask = cv2.erode(mask, kernel, iterations=1)
+#     mask = cv2.dilate(mask, kernel2, iterations=1)
+#     mask = cv2.erode(mask, kernel)
+#     return mask
 
 def morphological_filter(mask):
     """
