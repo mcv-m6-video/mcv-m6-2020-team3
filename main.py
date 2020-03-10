@@ -28,7 +28,10 @@ if __name__ == "__main__":
     iousPerFrame_list = []
     mAP_list = []
     detections = []
-    showme = False
+    ch_color = True
+    space = 'hsv'
+    showme = True
+
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     for x in range(1, numeberofimages):
@@ -39,7 +42,10 @@ if __name__ == "__main__":
         frame = cv.imread(pathim)
         #TODO (task 4 -GABY -KEYAO)
         #pre- processim (change space like YUV or lab)
-
+        if ch_color :
+            im_change = utils.chage_color_space(frame, space)
+        if (showme):
+            cv.imshow('hsv_img', im_change)
         #TODO (TASK 1  Gaussian modelling - YIXIONG)
         #IMPUT IMAGE (TRY GRY SCALE AND COLOR OPTION) OUTPUT MASK
 
