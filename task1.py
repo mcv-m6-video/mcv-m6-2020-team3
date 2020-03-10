@@ -10,7 +10,8 @@ if __name__ == "__main__":
     video_length = 2141
     # video_length = 100
     video_split_ratio = 0.25
-    video_path = "./Datasets/AICity_data/train/S03/c010/vdo.avi"
+    # video_path = "./Datasets/AICity_data/train/S03/c010/vdo.avi"
+    video_path = "./Datasets/AICity/frames/"
     groundtruth_xml_path = "./Datasets/aicity_annotations.xml"
     # groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
     roi_path = 'Datasets/AICity_data/train\S03/c010/roi.jpg'
