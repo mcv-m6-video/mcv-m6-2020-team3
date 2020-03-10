@@ -3,7 +3,6 @@ import cv2 as cv
 import os
 import sys
 import utils
-sys.path.insert(0, "/python/path/to/DEBUG/installation/of/opencv")
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -28,6 +27,8 @@ if __name__ == "__main__":
     pbar = tqdm(total=numeberofimages)
     iousPerFrame_list = []
     mAP_list = []
+    detections = []
+    showme = False
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     for x in range(1, numeberofimages):
@@ -52,14 +53,15 @@ if __name__ == "__main__":
         fgMask = backSub.apply(frame)
         fgmask_out = cv.resize(fgMask, (0, 0), fx=0.3, fy=0.3)
         cv.imwrite(save_path+'frame_' + '%05d.jpg' % x, fgmask_out.astype('uint8') * 255)
-        cv.imshow('Frame', frame)
-        cv.imshow('FG Mask_Antes', fgMask)
+        if (showme):
+            cv.imshow('Frame', frame)
+            cv.imshow('FG Mask_Antes', fgMask)
         keyboard = cv.waitKey(30)
         #TODO (TASK 4  Post Processing - GABY )
         maskMOG2 = utils.morphological_filtering(fgMask)
-        cv.imshow('FG Mask', maskMOG2)
-        window_candidatesMOG = utils.candidate_window(save_path, frame, x, maskMOG2)
-        detections.extend(window_candidatesMOG)
+        if (showme):
+            cv.imshow('FG Mask', maskMOG2)
+        detections = utils.candidate_window(showme, save_path, frame, x, maskMOG2, detections)
         pbar.update(1)
         keyboard = cv.waitKey(30)
         if keyboard == 'q' or keyboard == 27:
@@ -68,7 +70,7 @@ if __name__ == "__main__":
     pbar.close()
 
     # TODO ALL TASKS - Evaluattion GABY -KEYAO
-    # groundTruth = utils.read_annotations(ROOT_DIR + '/Datasets/AICity/aicity_annotations.xml', numeberofimages)
-    # groundTruthPerFrame = utils.getDetectionsPerFrame(groundTruth)
-    # detectionsMOG_filtered = [x for x in detections if x.frame > int(2141 * 0.25)]
-    # mAP = utils.calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=False)
+    groundTruth = utils.read_annotations(ROOT_DIR + '/Datasets/AICity/aicity_annotations.xml', numeberofimages)
+    groundTruthPerFrame = utils.getDetectionsPerFrame(groundTruth)
+    #detectionsMOG_filtered = [x for x in detections if x.frame > int(2141 * 0.25)]
+    mAP = utils.calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=False)
