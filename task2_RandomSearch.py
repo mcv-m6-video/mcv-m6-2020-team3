@@ -13,11 +13,11 @@ import sys
 if __name__ == "__main__":
     # too long will need a lot of time, so decrease
     # video_length = 2141
-    video_length = 20
+    video_length = 800
+    rSearchIterations = 10
     video_split_ratio = 0.25
-    video_path = "./Datasets/AICity/train/S03/c010/vdo.avi"
+    video_path = "./Datasets/AICity/frames/"
     groundtruth_xml_path = "./Datasets/aicity_annotations.xml"
-    # groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
     roi_path = 'Datasets/AICity/train/S03/c010/roi.jpg'
 
     print("Reading annotations...")
@@ -38,7 +38,6 @@ if __name__ == "__main__":
     print(rSearch.best_params_)"""
 
     #Generation of parameter candidates
-    rSearchIterations = 10
     randomParameters = list(ParameterSampler(params, n_iter=rSearchIterations))
     bestIteration = 0
     bestScore = 0
