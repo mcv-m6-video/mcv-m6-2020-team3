@@ -25,7 +25,7 @@ if __name__ == "__main__":
     foreground_second_part, detections = Gaussian_modelling(roi_path, video_path, alpha=1.25, rho=1,
                                                             video_length=video_length,
                                                             video_split_ratio = video_split_ratio)
-    mAP = utils.calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=False)
+    mAP = utils.calculate_mAP(gt_filtered, detections, IoU_threshold=0.5, have_confidence=False)
 
     print(mAP)
 
