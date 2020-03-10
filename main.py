@@ -46,6 +46,7 @@ if __name__ == "__main__":
             im_change = utils.chage_color_space(frame, space)
         if (showme):
             cv.imshow('hsv_img', im_change)
+        cv.imwrite(save_path+'hsv'+'frame_' + '%05d.jpg' % x,frame)
         #TODO (TASK 1  Gaussian modelling - YIXIONG)
         #IMPUT IMAGE (TRY GRY SCALE AND COLOR OPTION) OUTPUT MASK
 
