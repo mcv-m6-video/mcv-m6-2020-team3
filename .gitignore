@@ -6,9 +6,7 @@ Pipfile
 
 *.txt
 *.png
-Datasets/data_stereo_flow/testing/.zip
-Datasets/results_opticalflow_kitti/__MACOSX/results/._.DS_Store
-Datasets/results_opticalflow_kitti/results/.DS_Store
+Datasets/
 
 *.avi
 *.gif

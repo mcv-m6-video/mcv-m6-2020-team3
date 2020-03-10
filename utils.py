@@ -4,9 +4,7 @@ import numpy as np
 import copy
 import matplotlib.pyplot as plt
 import cv2 as cv
-import matplotlib.patches as pat
 from xml.dom import minidom
-import cv2
 import glob
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
@@ -524,7 +522,7 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
     #return precision, recall, precision_step, F1_score, mAP
     return mAP
 
-def candidate_window(save_path, frame, n_frame, mask, min_h=80, max_h=500, min_w=100, max_w=600, min_ratio=0.2, max_ratio=1.30):
+def candidate_window(showme, save_path, frame, n_frame, mask, detections, min_h=80, max_h=500, min_w=100, max_w=600, min_ratio=0.2, max_ratio=1.30):
     label_image = label(mask)
     regions = regionprops(label_image)
     # Blue color in BGR
@@ -540,10 +538,18 @@ def candidate_window(save_path, frame, n_frame, mask, min_h=80, max_h=500, min_w
             det = Detection(frame=n_frame, label='car', xtl=bbox[1], ytl=bbox[0], width=box_w, height=box_h, confidence=1)
             window_candidates.append(det)
             image = cv.rectangle(frame, (bbox[1], bbox[0] ), (bbox[1] +box_w , bbox[0] +box_h), color, thickness)
-        cv2.imshow("window_name", frame)
+            detection = {}
+            detection["frame"] = n_frame
+            detection["left"] = bbox[1]
+            detection["top"] = bbox[0]
+            detection["width"] = box_w
+            detection["height"] = box_h
+            detections.append(detection)
+        if (showme):
+            cv.imshow("window_name", frame)
         cv.imwrite(save_path+'/candidate/window_name_' + '%05d.jpg' % n_frame, frame)
 
-    return window_candidates
+    return detections
 
 
 def filter_connected_components(bbox, min_h, max_h, min_w, max_w, min_ratio, max_ratio):
@@ -597,19 +603,18 @@ def fill_holes(mask):
     im_floodfill = mask.astype(np.uint8).copy()
     h, w = im_floodfill.shape[:2]
     filling_mask = np.zeros((h + 2, w + 2), np.uint8)
-    cv2.floodFill(im_floodfill, filling_mask, (0, 0), 1)
+    cv.floodFill(im_floodfill, filling_mask, (0, 0), 1)
 
     return mask.astype(np.uint8) | (1 - im_floodfill)
 
 
 def filter_noise(mask):
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
-    mask = cv2.medianBlur(mask, 9)
-    #mask = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_OPEN, kernel)
-    mask = cv2.erode(mask, kernel, iterations=1)
-    mask = cv2.dilate(mask, kernel2, iterations=1)
-    mask = cv2.erode(mask, kernel)
+    kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5, 5))
+    kernel2 = cv.getStructuringElement(cv.MORPH_ELLIPSE, (9, 9))
+    mask = cv.medianBlur(mask, 9)
+    mask = cv.erode(mask, kernel, iterations=1)
+    mask = cv.dilate(mask, kernel2, iterations=1)
+    mask = cv.erode(mask, kernel)
     return mask
 
 
@@ -623,223 +628,9 @@ def morphological_filtering(mask):
 
     return mask_fill
 
+def chage_color_space(frame, space):
+    if space == 'hsv':
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+        return frame
 
-def granulometry(mask, steps, dict_kernels):
-    """
-        Granulometry study used to choose the size of kernels
-    """
-    new_mask = copy.deepcopy(mask.astype(np.uint8))
-    g_curve = np.zeros(steps)
-    for i in range(steps - 1):
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (i + 1, i + 1))
-        remain = cv2.morphologyEx(new_mask, cv2.MORPH_OPEN, kernel)
-        g_curve[i + 1] = np.sum(np.abs(np.count_nonzero(remain)))
-        new_mask = remain
 
-    g_curve[0] = g_curve[1]
-    pecstrum = -np.gradient(g_curve)
-    pecstrum = np.array(pecstrum)
-    plt.plot(pecstrum)
-
-    for i in range(2):
-        peak = np.where(pecstrum == max(pecstrum))[0][0]
-        if peak in dict_kernels.keys():
-            dict_kernels[peak] += 1
-        else:
-            dict_kernels[peak] = 1
-        pecstrum[peak] = min(pecstrum)
-    return dict_kernels
-def compute_mAP_Eval(groundtruth_list_original, detections_list, IoU_threshold=0.5):
-
-    groundtruth_list = deepcopy(groundtruth_list_original)
-
-    # Sort detections by confidence
-    detections_list.sort(key=lambda x: x.confidence, reverse=True)
-    # Save number of groundtruth labels
-    groundtruth_size = len(groundtruth_list)
-
-    TP = 0; FP = 0; FN = 0
-    precision = list(); recall = list()
-
-    # to compute mAP
-    max_precision_per_step = list()
-    threshold = 1; checkpoint = 0
-    #print(groundtruth_size)
-    #print(len(detections_list))
-    temp = 1000
-
-    for n, detection in enumerate(detections_list):
-        match_flag = False
-        if threshold != temp:
-            #print(threshold)
-            temp = threshold
-
-        # Get groundtruth of the target frame
-        gt_on_frame = [x for x in groundtruth_list if x.frame == detection.frame]
-        gt_bboxes = [(o.bbox, o.confidence) for o in gt_on_frame]
-
-        #print(gt_bboxes)
-        for gt_bbox in gt_bboxes:
-            #print(gt_bbox[0])
-            #print(detection.bbox)
-            iou = bbox_iou(gt_bbox[0], detection.bbox)
-            if iou > IoU_threshold and gt_bbox[1] > 0.9:
-                match_flag = True
-                TP += 1
-                gt_used = next((x for x in groundtruth_list if x.frame == detection.frame and x.bbox == gt_bbox[0]), None)
-                gt_used.confidence = 0
-                break
-
-        if match_flag == False:
-            FP += 1
-        match_flag = False
-
-        # Save metrics
-        precision.append(TP/(TP+FP))
-        recall.append(TP/groundtruth_size)
-
-    for n, r in enumerate(reversed(recall)):
-        if((r < threshold) or n == len(precision)-1):
-            if (r > threshold-0.1):
-                #print(n)
-                #print(r)
-                if n > 0:
-                    max_precision_per_step.append(max(precision[-n:]))
-                else:
-                    max_precision_per_step.append(precision[len(precision)-1])
-                threshold -= 0.1
-            else:
-                max_precision_per_step.append(0)
-                threshold -= 0.1
-
-    # Check false negatives
-    groups = defaultdict(list)
-    for obj in groundtruth_list:
-        groups[obj.frame].append(obj)
-    grouped_groundtruth_list = groups.values()
-
-    for groundtruth in grouped_groundtruth_list:
-        detection_on_frame = [x for x in detections_list if x.frame == groundtruth[0].frame]
-        detection_bboxes = [o.bbox for o in detection_on_frame]
-
-        groundtruth_bboxes = [o.bbox for o in groundtruth]
-
-        TP_temp, FN_temp, FP_temp = performance_accumulation_window(detection_bboxes, groundtruth_bboxes)
-        #print(detection_bboxes)
-        #print(groundtruth_bboxes)
-        #print("TP={} FN={} FP={}".format(TP_temp, FN_temp, FP_temp))
-
-        #FP += FP_temp
-        FN += FN_temp
-        #if (TP_temp > len(groundtruth_bboxes)):
-        #    TP += 1
-        #    FP += TP_temp - len(groundtruth_bboxes)
-        #else:
-        #    TP += 1
-
-    print("TP={} FN={} FP={}".format(TP, FN, FP))
-    #print(TP+FP)
-    #print("precision:{}".format(precision))
-    #print("recall:{}".format(recall))
-    #print(max_precision_per_step)
-    mAP = sum(max_precision_per_step)/11
-    print("mAP: {}\n".format(mAP))
-    return precision, recall, max_precision_per_step
-
-# def read_annotations(annotation_path, video_path):
-#     """
-#     Arguments:
-#     capture: frames from video, opened as cv2.VideoCapture
-#     root: parsed xml annotations as ET.parse(annotation_path).getroot()
-#     """
-#     capture = cv2.VideoCapture(video_path)
-#     root = ET.parse(annotation_path).getroot()
-#
-#     ground_truths = []
-#     images = []
-#     num = 0
-#
-#     pbar = tqdm(total=2140)
-#
-#     while capture.isOpened():
-#         valid, image = capture.read()
-#         if not valid:
-#             break
-#         #for now: (take only numannotated annotated frames)
-#         #if num > numannotated:
-#         #    break
-#
-#         images.append(image)
-#         for track in root.findall('track'):
-#             #gt_id = track.attrib['id']
-#             label = track.attrib['label']
-#             box = track.find("box[@frame='{0}']".format(str(num)))
-#             if box is not None and (label == 'car' or label == 'bike'):
-#
-#                 if box.attrib['occluded'] == '1':
-#                     continue
-#
-#                 if label == 'car' and box[0].text == 'true':                # Check parked
-#                     continue
-#
-#                 frame = int(box.attrib['frame'])
-#                 xtl = int(float(box.attrib['xtl']))
-#                 ytl = int(float(box.attrib['ytl']))
-#                 xbr = int(float(box.attrib['xbr']))
-#                 ybr = int(float(box.attrib['ybr']))
-#                 ground_truths.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
-#                 #ground_truths.append(Detection(frame, label, xtl, ytl, xbr, ybr, 1))
-#
-#         pbar.update(1)
-#         num += 1
-#
-#     pbar.close()
-#
-#     # print(ground_truths)
-#     capture.release()
-#     return ground_truths
-#
-#
-# def read_annotations_from_txt(gt_path, analyze=True):
-#     """
-#     Read annotations from the txt files
-#     Arguments:
-#     gt_path: path to .txt file
-#     :returns: list of Detection
-#     """
-#     ground_truths_list = list()
-#     if analyze:
-#         max_w = 0
-#         min_w = 2000
-#         max_h = 0
-#         min_h = 2000
-#         min_ratio = 100
-#         max_ratio = 0
-#     with open(gt_path) as f:
-#         for line in f:
-#             data = line.split(',')
-#             ground_truths_list.append(Detection(int(data[0]), 'car', int(float(data[2])), int(float(data[3])), int(float(data[4])), int(float(data[5])),float(data[6])))
-#
-#             if analyze:
-#                 if int(data[4]) < min_w: min_w = int(data[4])
-#                 if int(data[4]) > max_w: max_w = int(data[4])
-#                 if int(data[5]) < min_h: min_h = int(data[5])
-#                 if int(data[5]) > max_h: max_h = int(data[5])
-#                 if int(data[5])/int(data[4]) > max_ratio: max_ratio = int(data[5])/int(data[4])
-#                 if int(data[5])/int(data[4]) < min_ratio: min_ratio = int(data[5])/int(data[4])
-#     # print('width: [{0}, {1}]'.format(min_w, max_w))
-#     # print('height: [{0}, {1}]'.format(min_h, max_h))
-#     # print('ratio: [{0}, {1}]'.format(min_ratio, max_ratio))
-#
-#     return ground_truths_list
-#
-#
-# def read_annotations_file(gt_path, video_path):
-#     if (gt_path.endswith('.txt')):
-#         annotations_list = read_annotations_from_txt(gt_path)
-#     elif (gt_path.endswith('.xml')):
-#         annotations_list = read_annotations(gt_path, video_path)
-#     else:
-#         raise Exception('Incompatible filetype')
-#
-#     return annotations_list
