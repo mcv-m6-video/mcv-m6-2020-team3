@@ -1,5 +1,5 @@
 from __future__ import print_function
-import cv2 as cv
+import cv2
 import os
 import sys
 import utils
@@ -13,26 +13,15 @@ import argparse
 
 def chooseAlgorithm(typeBS):
     if typeBS == 'MOG':
-        backSub = cv.bgsegm.createBackgroundSubtractorMOG()
+        backSub = cv2.bgsegm.createBackgroundSubtractorMOG()
     elif typeBS == 'MOG2':
-        backSub = cv.createBackgroundSubtractorMOG2()
+        backSub = cv2.createBackgroundSubtractorMOG2()
     elif typeBS == 'MOG2_notshadows':
-        backSub = cv.createBackgroundSubtractorMOG2(detectShadows=False)
+        backSub = cv2.createBackgroundSubtractorMOG2(detectShadows=False)
     elif typeBS == 'KNN':
-        backSub = cv.createBackgroundSubtractorKNN()
-    elif typeBS == 'LSBP':
-        backSub = cv.createBackgroundSubtractorLSBP()
+        backSub = cv2.createBackgroundSubtractorKNN()
+    elif typeBS == 'CNT':
+        backSub = cv2.bgsegm.createBackgroundSubtractorCNT()
     elif typeBS == 'GMG':
-        backSub = cv.bgsegm.createBackgroundSubtractorGMG()
+        backSub = cv2.bgsegm.createBackgroundSubtractorGMG()
     return backSub
-
-def video_input (path, inputtype):
-    if inputtype == 'video':
-        capture = cv.VideoCapture(cv.samples.findFileOrKeep(path))
-
-    return capture
-
-
-
-
-
