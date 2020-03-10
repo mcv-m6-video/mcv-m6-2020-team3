@@ -10,7 +10,8 @@ if __name__ == "__main__":
     video_length = 2141
     # video_length = 100
     video_split_ratio = 0.25
-    video_path = "./Datasets/AICity_data/train/S03/c010/vdo.avi"
+    # video_path = "./Datasets/AICity_data/train/S03/c010/vdo.avi"
+    video_path = "./Datasets/AICity/frames/"
     groundtruth_xml_path = "./Datasets/aicity_annotations.xml"
     # groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
     roi_path = 'Datasets/AICity_data/train\S03/c010/roi.jpg'
@@ -24,7 +25,7 @@ if __name__ == "__main__":
     foreground_second_part, detections = Gaussian_modelling(roi_path, video_path, alpha=1.25, rho=1,
                                                             video_length=video_length,
                                                             video_split_ratio = video_split_ratio)
-    mAP = utils.calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=False)
+    mAP = utils.calculate_mAP(gt_filtered, detections, IoU_threshold=0.5, have_confidence=False)
 
     print(mAP)
 
