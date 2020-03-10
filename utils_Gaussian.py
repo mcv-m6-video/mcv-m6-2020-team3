@@ -7,6 +7,11 @@ import numpy as np
 
 from skimage import measure
 
+import skvideo.io
+
+
+
+
 
 
 def Gaussian_modelling(roi_path, video_path, alpha, rho, video_length = 2141, video_split_ratio = 0.25):
@@ -31,27 +36,31 @@ def read_video_and_divide(video_path, video_length, video_split_ratio):
     read video, transform into gray and divide
     """
     print("begin reading video")
-    video = cv2.VideoCapture(video_path)
+    # video = cv2.VideoCapture(video_path)
 
     divide_frame = int(video_length*video_split_ratio)
 
     for i in tqdm(range(video_length)):
-        if video.isOpened():
-            valid, frame = video.read()
-        else:
-            raise Exception("video.isOpened() = false")
-        if not valid:
-            raise Exception("frame_valid = false")
+        # if video.isOpened():
+        #     valid, frame = video.read()
+        # else:
+        #     raise Exception("video.isOpened() = false")
+        # if not valid:
+        #     raise Exception("frame_valid = false")
 
+        #
+        filename = "{}{}.jpg".format(video_path, str(i+1).zfill(5))
+
+        frame = cv2.imread(filename)
         if i == 0:
-            video_first_part = np.zeros((divide_frame, frame.shape[0], frame.shape[1]))
+            video_first_part = np.zeros((divide_frame, frame.shape[0], frame.shape[1]), dtype="uint8")
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             video_first_part[i, :, :] = frame
         elif i < divide_frame:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             video_first_part[i, :, :] = frame
         elif i == divide_frame:
-            video_second_part = np.zeros((video_length - divide_frame, frame.shape[0], frame.shape[1]))
+            video_second_part = np.zeros((video_length - divide_frame, frame.shape[0], frame.shape[1]), dtype="uint8")
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             video_second_part[i - divide_frame, :, :] = frame
         else:
@@ -80,8 +89,8 @@ def calculate_mask(roi, video_second_part, frame_mean, frame_std, alpha):
     """
     calculate_mask
     """
-    foreground_second_part = np.zeros(video_second_part.shape)
-    for i in range(video_second_part.shape[0]):
+    foreground_second_part = np.zeros(video_second_part.shape, dtype="uint8")
+    for i in tqdm(range(video_second_part.shape[0])):
         frame = video_second_part[i, :, :]
         foreground_1 = foreground_gaussian(frame, frame_mean, frame_std, alpha)
         foreground_roi = roi * foreground_1
@@ -94,7 +103,7 @@ def calculate_mask(roi, video_second_part, frame_mean, frame_std, alpha):
 def find_detections(foreground_second_part, first_frame_id, min_h=80, max_h=500, min_w=100,
                     max_w=600, min_ratio=0.1, max_ratio=10.0):
     detections = []
-    for i in range(foreground_second_part.shape[0]):
+    for i in tqdm(range(foreground_second_part.shape[0])):
         frame_id = i + first_frame_id
         mask = foreground_second_part[i, :, :]
         label_image = measure.label(mask)
@@ -171,13 +180,40 @@ def morphological_filter(mask):
     a traffic sign or not.
     """
 
-    plt.imshow(mask)
-    plt.show()
+    # plt.imshow(mask)
+    # plt.show()
     mask_filled = fill_holes(mask)
-    plt.imshow(mask_filled)
-    plt.show()
+    # plt.imshow(mask_filled)
+    # plt.show()
     mask_filtered = filter_noise(mask_filled)
-    plt.imshow(mask_filtered)
-    plt.show()
+    # plt.imshow(mask_filtered)
+    # plt.show()
     return mask_filtered
+
+
+if __name__ == "__main__":
+
+    # videogen = skvideo.io.vreader("./Datasets/AICity_data/train/S03/c010/vdo.avi")
+    # for frame in videogen:
+    #     print(frame.shape)
+    #
+    # pass
+    frames = []
+    video_path = "./Datasets/AICity/frames/"
+    for i in range(2141):
+        # if video.isOpened():
+        #     valid, frame = video.read()
+        # else:
+        #     raise Exception("video.isOpened() = false")
+        # if not valid:
+        #     raise Exception("frame_valid = false")
+
+        #
+        filename = "{}{}.jpg".format(video_path, str(i+1).zfill(5))
+
+        frame = cv2.imread(filename)
+        frames.append(frame)
+
+
+
 
