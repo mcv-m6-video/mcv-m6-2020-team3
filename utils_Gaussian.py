@@ -90,7 +90,7 @@ def calculate_mask(roi, video_second_part, frame_mean, frame_std, alpha):
     """
     calculate_mask
     """
-    verbose = True
+    verbose = False
     foreground_second_part = np.zeros(video_second_part.shape, dtype="uint8")
     if verbose:
         images = []
@@ -108,7 +108,7 @@ def calculate_mask(roi, video_second_part, frame_mean, frame_std, alpha):
         foreground_second_part[i, :, :] = foreground_filtered
 
     if verbose:
-        imageio.mimsave(str(alpha) + '.gif', images)
+        imageio.mimsave(str(alpha) + 'foreground_1.gif', images)
 
     return foreground_second_part
 

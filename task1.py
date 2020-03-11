@@ -64,9 +64,9 @@ if __name__ == "__main__":
         cv2.imwrite("std_norm.jpg", std_norm)
 
 
-    for alpha_i in range(3, 4, 2):
+    for alpha_i in range(9, 10, 2):
         # here we can set whether to test all the 75% of video
-        flag_test_part = True
+        flag_test_part = False
         test_length = 50
         if flag_test_part:
             video_second_part = video_second_part[:test_length, :, :]
@@ -98,7 +98,8 @@ if __name__ == "__main__":
 
         mAP_list.append(mAP_mean)
 
-        utils.addBboxesToFrames_gif(video_path, detections, gt_filtered, "test")
+        utils.addBboxesToFrames(video_path, detections, gt_filtered, "final_detection"+str(alpha_i))
+        # utils.addBboxesToFrames_gif(video_path, detections, gt_filtered, "final_detection" + str(alpha_i))
 
     print(mAP_list)
 pass
