@@ -636,4 +636,13 @@ def morphological_filtering(mask):
 
     return mask_fill
 
+def chage_color_space(frame, space):
+    if space == 'hsv':
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+    if space == 'lab':
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2Lab)
+    if space == 'luv':
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2Luv)
+        return frame
+
 
