@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np 
 import os
 from sklearn.model_selection import ParameterSampler
+import pickle
+import imageio
 
 from utils import read_annotations, addBboxesToFrames, calculate_mAP
 
@@ -17,6 +19,7 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
     flag = True
     training_frames = num_frames * 0.25
     detections = []
+    foregroundMasks = []
 
     if color_space == 'GRAY':
         frames_acc = np.zeros((frame_height, frame_width), dtype='float')
@@ -75,13 +78,12 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
             flag, srcFrame = capture_frames.read()
             if not flag: continue
             iter_frame = int(capture_frames.get(cv2.CAP_PROP_POS_FRAMES))
-            print('frame: ', iter_frame)
 
             frames = srcFrame
             if color_space == 'GRAY':
-                frame = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
+                frames = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
             elif color_space == 'YUV':
-                frame = cv2.cvtColor(frames, cv2.COLOR_BGR2YUV)
+                frames = cv2.cvtColor(frames, cv2.COLOR_BGR2YUV)
 
             probability_Image = np.absolute(frames - mean_image) - alpha_factor * (np.sqrt(variance_image)+ 2)
             ret, foreground_Mask = cv2.threshold(probability_Image, 0, 255, cv2.THRESH_BINARY)
@@ -127,6 +129,8 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
             # cv2.waitKey()
             # openedMask = foreground_Mask
             opened_Mask = np.uint8(opened_Mask)
+            if iter_frame % 4 == 0:
+                foregroundMasks.append(cv2.resize(opened_Mask, (opened_Mask.shape[0], opened_Mask.shape[1])))
 
             nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(opened_Mask, 4, cv2.CV_32S)
 
@@ -154,7 +158,7 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
             # plt.imshow(cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), (0,0), fx=rescaling_factor, fy=rescaling_factor))
 
     capture_frames.release()
-    return detections, training_frames
+    return detections, training_frames, foregroundMasks
 
 
 
@@ -181,12 +185,14 @@ def main():
 
     params = {}
     params['alpha'] = np.arange(3, 10, 0.5)
-    params['rho'] = np.arange(0.25, 1, 0.05)
+    params['rho'] = np.arange(0.005, 0.5, 0.005)
 
     # Generation of parameter candidates
     randomParameters = list(ParameterSampler(params, n_iter=rSearchIterations))
     bestIteration = 0
     bestScore = 0
+    #Uncomment to run once with best parameters
+    #randomParameters = [{'alpha': 9.5, 'rho': 0.42}]
 
     for i, combination in enumerate(randomParameters):
         print("Trial " + str(i) + " out of " + str(rSearchIterations))
@@ -196,11 +202,20 @@ def main():
         #text_trap = io.StringIO()
         #sys.stdout = text_trap
 
-        bboxes_detections, training_frames = adaptive_modelling_background(path, alpha_factor=combination['alpha'], rho_factor=combination['rho'],
-                                                                           mask_roi=mask_roi, path_to_save=None
-                                                                           , color_space='YUV')
+        bboxes_detections, training_frames, fg_masks = adaptive_modelling_background(path,
+                                                                                     alpha_factor=combination['alpha'],
+                                                                                     rho_factor=combination['rho'],
+                                                                                     mask_roi=mask_roi,
+                                                                                     path_to_save=None,
+                                                                                     color_space='GRAY')
 
-        mAP = calculate_mAP(gt_filtered, bboxes_detections, IoU_threshold=0.5, have_confidence=True, verbose=False)
+        pickle.dump(fg_masks, open("masks.p", "wb"))
+        pickle.dump(bboxes_detections, open("bboxes.p", "wb"))
+
+        mAP = calculate_mAP(gt_filtered, bboxes_detections, IoU_threshold=0.5, have_confidence=False, verbose=False)
+
+        print("Generating GIF")
+        imageio.mimsave('fg_masks.gif', fg_masks)
 
         # now restore stdout function
         #sys.stdout = sys.__stdout__
