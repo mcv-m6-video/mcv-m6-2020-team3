@@ -3,6 +3,7 @@ import random
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
+import cv2
 import cv2 as cv
 from xml.dom import minidom
 import glob
@@ -373,7 +374,13 @@ def read_annotations(annotation_path, video_len):
         for track in root.findall('track'):
             label = track.attrib['label']
             box = track.find("box[@frame='{0}']".format(str(frame)))
+
             if box is not None and label == 'car':
+                if box.attrib['occluded'] == '1':
+                    continue
+                if label == 'car' and box[0].text == 'true':  # Check parked
+                    continue
+
                 detectionDict = {}
                 detectionDict['frame'] = int(box.attrib['frame']) + 1
                 detectionDict['left'] = int(float(box.attrib['xtl']))
@@ -383,6 +390,7 @@ def read_annotations(annotation_path, video_len):
                 groundTruth.append(detectionDict)
 
     return groundTruth
+
 def add_noise_to_detections(gt_boxes_path, video_len, rescaling_factor = [0.5, 1], translation_factor = 30, prob_discard = 0.1):
     noisy_gt_boxes = []
     # rescaling_factor = [0.5, 1]
@@ -631,6 +639,10 @@ def morphological_filtering(mask):
 def chage_color_space(frame, space):
     if space == 'hsv':
         frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+    if space == 'lab':
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2Lab)
+    if space == 'luv':
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2Luv)
         return frame
 
 
