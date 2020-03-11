@@ -52,9 +52,6 @@ if __name__ == "__main__":
             video_second_part, divide_frame, video_first_part_mean, video_first_part_std, gt_filtered = pickle.load(p)
             p.close()
 
-    print("Reading annotations...")
-    groundTruth = utils.read_annotations('Datasets/ai_challenge_s03_c010-full_annotation.xml', video_length)
-    gt_filtered = [x for x in groundTruth if x['frame'] > int(video_length * video_split_ratio)]
 
     mAP_list = []
     for i in range(3, 4):
