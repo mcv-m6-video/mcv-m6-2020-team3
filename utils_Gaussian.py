@@ -216,11 +216,11 @@ def morphological_filter(mask):
     if flag_plot:
         plt.imshow(mask)
         plt.show()
-    mask_close = fill_close(mask)
-    if flag_plot:
-        plt.imshow(mask_close)
-        plt.show()
-    mask_filled = fill_holes(mask_close)
+    # mask_close = fill_close(mask)
+    # if flag_plot:
+    #     plt.imshow(mask_close)
+    #     plt.show()
+    mask_filled = fill_holes(mask)
     if flag_plot:
         plt.imshow(mask_filled)
         plt.show()
