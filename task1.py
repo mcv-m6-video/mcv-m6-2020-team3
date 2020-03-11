@@ -6,6 +6,8 @@ from utils_Gaussian import Gaussian_modelling
 import cv2
 import pickle
 
+import random
+
 from utils_Gaussian import read_video_and_divide, calculate_mean_std_first_part_video, calculate_mask, find_detections
 
 
@@ -57,7 +59,7 @@ if __name__ == "__main__":
     for i in range(3, 4):
         # here we can set whether to test all the 75% of video
         flag_test_part = True
-        test_length = 100
+        test_length = 500
         if flag_test_part:
             video_second_part = video_second_part[:test_length, :, :]
             gt_filtered = [x for x in gt_filtered if x['frame'] <= (divide_frame + 1 + test_length)]
@@ -72,9 +74,14 @@ if __name__ == "__main__":
 
         print('Finish Extracting foreground...foreground_second_part.shape = {}', foreground_second_part.shape)
 
-        mAP = utils.calculate_mAP(gt_filtered, detections, IoU_threshold=0.5, have_confidence=False, verbose=True)
+        mAP_random_list = []
+        for i in range(5):
+            random.shuffle(detections)
+            mAP = utils.calculate_mAP(gt_filtered, detections, IoU_threshold=0.5, have_confidence=False, verbose=True)
+            mAP_random_list.append(mAP)
+        mAP_mean = np.mean(mAP_random_list)
 
-        mAP_list.append(mAP)
+        mAP_list.append(mAP_mean)
 
         utils.addBboxesToFrames(video_path, detections, gt_filtered, "test")
 
