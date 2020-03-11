@@ -648,7 +648,7 @@ def chage_color_space(frame, space):
         return frame
 
 
-def addBboxesToFrames_gif(framesPath, detections, groundTruth, name):
+def addBboxesToFrames_gif(framesPath, detections, groundTruth, name, length=None):
     #Show GT bboxes and detections
     #Preprocess detections and GT
     for detection in detections:
@@ -663,6 +663,7 @@ def addBboxesToFrames_gif(framesPath, detections, groundTruth, name):
     frameFiles = glob.glob(framesPath + '/*.jpg')
 
     images = []
+    firstFrame = combinedList[0]['frame']
 
     prevFrame = 0
     frameMat = cv2.imread(frameFiles[0])
@@ -672,6 +673,8 @@ def addBboxesToFrames_gif(framesPath, detections, groundTruth, name):
             resized = cv2.resize(frameMat, (480, 270), interpolation=cv2.INTER_AREA)
             images.append(resized)
             frameMat = cv2.imread(frameFiles[frame])
+            if frameCount is not None and frame-firstFrame > length:
+                break
         startPoint = (int(item['left']), int(item['top']))
         endPoint = (int(startPoint[0] + item['width']), int(startPoint[1] + item['height']))
         color = (255, 0, 0) if item['isGT'] is True else (0, 0, 255)
