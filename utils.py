@@ -16,6 +16,8 @@ from skimage.measure import label, regionprops
 import matplotlib.patches as mpatches
 from detection import Detection
 
+import imageio
+
 def getDetections(detectionFilePath):
     with open(detectionFilePath, 'r') as f:
         detections = [getDictFromDetection(line) for line in f]
@@ -645,4 +647,35 @@ def chage_color_space(frame, space):
         frame = cv.cvtColor(frame, cv.COLOR_BGR2Luv)
         return frame
 
+
+def addBboxesToFrames_gif(framesPath, detections, groundTruth, name):
+    #Show GT bboxes and detections
+    #Preprocess detections and GT
+    for detection in detections:
+        detection['isGT'] = False
+    for item in groundTruth:
+        item['isGT'] = True
+
+    combinedList = detections + groundTruth
+
+    combinedList = sortDetectionsByKey(combinedList, 'frame')
+
+    frameFiles = glob.glob(framesPath + '/*.jpg')
+
+    images = []
+
+    prevFrame = 0
+    frameMat = cv2.imread(frameFiles[0])
+    for item in tqdm(combinedList):
+        frame = item['frame'] - 1
+        if frame != prevFrame:
+            resized = cv2.resize(frameMat, (480, 270), interpolation=cv2.INTER_AREA)
+            images.append(resized)
+            frameMat = cv2.imread(frameFiles[frame])
+        startPoint = (int(item['left']), int(item['top']))
+        endPoint = (int(startPoint[0] + item['width']), int(startPoint[1] + item['height']))
+        color = (255, 0, 0) if item['isGT'] is True else (0, 0, 255)
+        frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, 2)
+        prevFrame = frame
+    imageio.mimsave(name + '.gif', images)
 

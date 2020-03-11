@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from skimage import measure
+import imageio
 
 import skvideo.io
 
@@ -89,13 +90,25 @@ def calculate_mask(roi, video_second_part, frame_mean, frame_std, alpha):
     """
     calculate_mask
     """
+    verbose = True
     foreground_second_part = np.zeros(video_second_part.shape, dtype="uint8")
+    if verbose:
+        images = []
     for i in tqdm(range(video_second_part.shape[0])):
         frame = video_second_part[i, :, :]
         foreground_1 = foreground_gaussian(frame, frame_mean, frame_std, alpha)
+        if verbose:
+            resized = cv2.resize(255*foreground_1.astype(np.uint8), (240, 135), interpolation=cv2.INTER_AREA)
+            images.append(resized)
         foreground_roi = roi * foreground_1
         foreground_filtered = morphological_filter(foreground_roi)
+        # if verbose:
+        #     resized = cv2.resize(foreground_filtered, (240, 135), interpolation=cv2.INTER_AREA)
+        #     images.append(resized)
         foreground_second_part[i, :, :] = foreground_filtered
+
+    if verbose:
+        imageio.mimsave(str(alpha) + '.gif', images)
 
     return foreground_second_part
 
@@ -108,15 +121,17 @@ def find_detections(foreground_second_part, first_frame_id, min_h=30, max_h=1000
         mask = foreground_second_part[i, :, :]
         label_image = measure.label(mask)
         regions = measure.regionprops(label_image)
+        mask_color = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
         for region in regions:
             bbox = region.bbox
 
+            # watch the mask
             box_h = bbox[2] - bbox[0]
             box_w = bbox[3] - bbox[1]
             startPoint = (int(bbox[1]), int(bbox[0]))
             endPoint = (int(bbox[1] + box_w), int(bbox[0] + box_h))
-            color = (255, 255, 255)
-            mask = cv2.rectangle(mask, startPoint, endPoint, color, 10)
+            color = (255, 0, 0)
+            mask_color = cv2.rectangle(mask_color, startPoint, endPoint, color, 5)
 
             detection = {}
             if filter_region(bbox, min_h, max_h, min_w, max_w, min_ratio, max_ratio):
@@ -128,6 +143,8 @@ def find_detections(foreground_second_part, first_frame_id, min_h=30, max_h=1000
                 detection['width'] = box_w
                 detection['height'] = box_h
                 detections.append(detection)
+
+
 
     return detections
 

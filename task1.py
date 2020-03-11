@@ -56,19 +56,34 @@ if __name__ == "__main__":
 
 
     mAP_list = []
-    for i in range(3, 4):
+    verbose = False
+    if verbose:
+        cv2.imwrite("video_first_part_mean.jpg", video_first_part_mean)
+        _range = video_first_part_std.max() - video_first_part_std.min()
+        std_norm = 255*(video_first_part_std - video_first_part_std.min()) / _range
+        cv2.imwrite("std_norm.jpg", std_norm)
+
+
+    for alpha_i in range(3, 4, 2):
         # here we can set whether to test all the 75% of video
         flag_test_part = True
-        test_length = 500
+        test_length = 50
         if flag_test_part:
             video_second_part = video_second_part[:test_length, :, :]
             gt_filtered = [x for x in gt_filtered if x['frame'] <= (divide_frame + 1 + test_length)]
 
 
         print('Extracting foreground...')
-        alpha = float(i)
+        alpha = float(alpha_i)
         foreground_second_part = calculate_mask(roi, video_second_part, video_first_part_mean,
                                                 video_first_part_std, alpha)
+        if verbose:
+            size = (1920, 1080)
+            fps = 10
+            out = cv2.VideoWriter(str(alpha_i) + '.avi', cv2.VideoWriter_fourcc(*'DIVX'), fps, size, 0)
+            for i in range(foreground_second_part.shape[0]):
+                out.write(foreground_second_part[i, :, :])
+            out.release()
 
         detections = find_detections(foreground_second_part, first_frame_id=divide_frame + 1)
 
@@ -83,7 +98,7 @@ if __name__ == "__main__":
 
         mAP_list.append(mAP_mean)
 
-        utils.addBboxesToFrames(video_path, detections, gt_filtered, "test")
+        utils.addBboxesToFrames_gif(video_path, detections, gt_filtered, "test")
 
     print(mAP_list)
 pass
