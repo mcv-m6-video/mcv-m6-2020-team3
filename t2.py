@@ -5,6 +5,7 @@ import os
 from sklearn.model_selection import ParameterSampler
 import pickle
 import imageio
+import utils
 
 from utils import read_annotations, addBboxesToFrames, calculate_mAP
 
@@ -20,6 +21,7 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
     training_frames = num_frames * 0.25
     detections = []
     foregroundMasks = []
+    preMasks = []
 
     if color_space == 'GRAY':
         frames_acc = np.zeros((frame_height, frame_width), dtype='float')
@@ -89,6 +91,8 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
             ret, foreground_Mask = cv2.threshold(probability_Image, 0, 255, cv2.THRESH_BINARY)
             foreground_Mask = np.uint8(foreground_Mask)
 
+            preMasks.append(cv2.resize(foreground_Mask, (int(foreground_Mask.shape[1]/4), int(foreground_Mask.shape[0]/4))))
+
             # cv2.imshow("window", foreground_Mask)
             # cv2.waitKey()
 
@@ -129,8 +133,7 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
             # cv2.waitKey()
             # openedMask = foreground_Mask
             opened_Mask = np.uint8(opened_Mask)
-            if iter_frame % 4 == 0:
-                foregroundMasks.append(cv2.resize(opened_Mask, (opened_Mask.shape[0], opened_Mask.shape[1])))
+            foregroundMasks.append(cv2.resize(opened_Mask, (int(opened_Mask.shape[1]/4), int(opened_Mask.shape[0]/4))))
 
             nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(opened_Mask, 4, cv2.CV_32S)
 
@@ -158,7 +161,7 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
             # plt.imshow(cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), (0,0), fx=rescaling_factor, fy=rescaling_factor))
 
     capture_frames.release()
-    return detections, training_frames, foregroundMasks
+    return detections, training_frames, foregroundMasks, preMasks
 
 
 
@@ -195,14 +198,14 @@ def main():
     #randomParameters = [{'alpha': 9.5, 'rho': 0.42}]
 
     for i, combination in enumerate(randomParameters):
-        print("Trial " + str(i) + " out of " + str(rSearchIterations))
+        print("Trial " + str(i) + " out of " + str(len(randomParameters)))
         print("Testing the parameters:")
         print(combination)
         # Suppress stdout from the Gaussian modeling function
         #text_trap = io.StringIO()
         #sys.stdout = text_trap
 
-        bboxes_detections, training_frames, fg_masks = adaptive_modelling_background(path,
+        bboxes_detections, training_frames, fg_masks, preMasks = adaptive_modelling_background(path,
                                                                                      alpha_factor=combination['alpha'],
                                                                                      rho_factor=combination['rho'],
                                                                                      mask_roi=mask_roi,
@@ -210,12 +213,16 @@ def main():
                                                                                      color_space='GRAY')
 
         pickle.dump(fg_masks, open("masks.p", "wb"))
+        pickle.dump(preMasks, open("pre_masks.p", "wb"))
         pickle.dump(bboxes_detections, open("bboxes.p", "wb"))
 
         mAP = calculate_mAP(gt_filtered, bboxes_detections, IoU_threshold=0.5, have_confidence=False, verbose=False)
 
-        print("Generating GIF")
-        imageio.mimsave('fg_masks.gif', fg_masks)
+        print("Generating GIFs")
+        frames_path = 'Datasets/AICity/frames'
+        utils.addBboxesToFrames_gif(frames_path, detections, gt_filtered, 'bboxes_adaptive', length=100)
+        imageio.mimsave('pre_masks.gif', preMasks[0:100])
+        imageio.mimsave('fg_masks.gif', fg_masks[0:100])
 
         # now restore stdout function
         #sys.stdout = sys.__stdout__
