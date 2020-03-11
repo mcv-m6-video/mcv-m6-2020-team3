@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from skimage import measure
+import imageio
 
 import skvideo.io
 
@@ -89,28 +90,50 @@ def calculate_mask(roi, video_second_part, frame_mean, frame_std, alpha):
     """
     calculate_mask
     """
+    verbose = False
     foreground_second_part = np.zeros(video_second_part.shape, dtype="uint8")
+    if verbose:
+        images = []
     for i in tqdm(range(video_second_part.shape[0])):
         frame = video_second_part[i, :, :]
         foreground_1 = foreground_gaussian(frame, frame_mean, frame_std, alpha)
+        if verbose:
+            resized = cv2.resize(255*foreground_1.astype(np.uint8), (240, 135), interpolation=cv2.INTER_AREA)
+            images.append(resized)
         foreground_roi = roi * foreground_1
         foreground_filtered = morphological_filter(foreground_roi)
+        # if verbose:
+        #     resized = cv2.resize(foreground_filtered, (240, 135), interpolation=cv2.INTER_AREA)
+        #     images.append(resized)
         foreground_second_part[i, :, :] = foreground_filtered
+
+    if verbose:
+        imageio.mimsave(str(alpha) + 'foreground_1.gif', images)
 
     return foreground_second_part
 
 
-def find_detections(foreground_second_part, first_frame_id, min_h=80, max_h=500, min_w=100,
-                    max_w=600, min_ratio=0.1, max_ratio=10.0):
+def find_detections(foreground_second_part, first_frame_id, min_h=30, max_h=1000, min_w=30,
+                    max_w=1000, min_ratio=0.1, max_ratio=10.0):
     detections = []
     for i in tqdm(range(foreground_second_part.shape[0])):
         frame_id = i + first_frame_id
         mask = foreground_second_part[i, :, :]
         label_image = measure.label(mask)
         regions = measure.regionprops(label_image)
-        detection = {}
+        mask_color = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
         for region in regions:
             bbox = region.bbox
+
+            # watch the mask
+            box_h = bbox[2] - bbox[0]
+            box_w = bbox[3] - bbox[1]
+            startPoint = (int(bbox[1]), int(bbox[0]))
+            endPoint = (int(bbox[1] + box_w), int(bbox[0] + box_h))
+            color = (255, 0, 0)
+            mask_color = cv2.rectangle(mask_color, startPoint, endPoint, color, 5)
+
+            detection = {}
             if filter_region(bbox, min_h, max_h, min_w, max_w, min_ratio, max_ratio):
                 box_h = bbox[2] - bbox[0]
                 box_w = bbox[3] - bbox[1]
@@ -120,6 +143,8 @@ def find_detections(foreground_second_part, first_frame_id, min_h=80, max_h=500,
                 detection['width'] = box_w
                 detection['height'] = box_h
                 detections.append(detection)
+
+
 
     return detections
 
@@ -141,20 +166,45 @@ def foreground_gaussian(img, model_mean, model_std, alpha):
     foreground = abs(img - model_mean) >= alpha * (model_std + 2)
     return foreground
 
+def fill_close(mask):
+    kernel_size = (20, 20)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
+    kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
+    mask = cv2.dilate(mask, kernel2, iterations=1)
+    mask = cv2.erode(mask, kernel, iterations=1)
+    return mask
 
 def fill_holes(mask):
     im_floodfill = mask.astype(np.uint8).copy()
     h, w = im_floodfill.shape[:2]
     filling_mask = np.zeros((h + 2, w + 2), np.uint8)
     cv2.floodFill(im_floodfill, filling_mask, (0, 0), 1)
+
     return mask.astype(np.uint8) | (1 - im_floodfill)
 
 
 def filter_noise(mask):
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (50, 50))
-    mask = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_OPEN, kernel)
-    mask = cv2.medianBlur(mask, 7)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
+    mask = cv2.medianBlur(mask, 9)
+    mask = cv2.erode(mask, kernel, iterations=1)
+    mask = cv2.dilate(mask, kernel2, iterations=1)
+    mask = cv2.erode(mask, kernel)
     return mask
+
+# def fill_holes(mask):
+#     im_floodfill = mask.astype(np.uint8).copy()
+#     h, w = im_floodfill.shape[:2]
+#     filling_mask = np.zeros((h + 2, w + 2), np.uint8)
+#     cv2.floodFill(im_floodfill, filling_mask, (0, 0), 1)
+#     return mask.astype(np.uint8) | (1 - im_floodfill)
+#
+#
+# def filter_noise(mask):
+#     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (50, 50))
+#     mask = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_OPEN, kernel)
+#     mask = cv2.medianBlur(mask, 7)
+#     return mask
 
 # def fill_holes(mask):
 #     im_floodfill = mask.astype(np.uint8).copy()
@@ -179,15 +229,22 @@ def morphological_filter(mask):
     Apply morphological operations to prepare pixel candidates to be selected as
     a traffic sign or not.
     """
-
-    # plt.imshow(mask)
-    # plt.show()
+    flag_plot = False
+    if flag_plot:
+        plt.imshow(mask)
+        plt.show()
+    # mask_close = fill_close(mask)
+    # if flag_plot:
+    #     plt.imshow(mask_close)
+    #     plt.show()
     mask_filled = fill_holes(mask)
-    # plt.imshow(mask_filled)
-    # plt.show()
+    if flag_plot:
+        plt.imshow(mask_filled)
+        plt.show()
     mask_filtered = filter_noise(mask_filled)
-    # plt.imshow(mask_filtered)
-    # plt.show()
+    if flag_plot:
+        plt.imshow(mask_filtered)
+        plt.show()
     return mask_filtered
 
 
