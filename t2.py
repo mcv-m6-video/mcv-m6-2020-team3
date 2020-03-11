@@ -2,6 +2,7 @@ import cv2
 import matplotlib.pyplot as plt 
 import numpy as np 
 import os
+from sklearn.model_selection import ParameterSampler
 
 from utils import read_annotations, addBboxesToFrames, calculate_mAP
 
@@ -15,6 +16,7 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
     # Configuration for Training frames
     flag = True
     training_frames = num_frames * 0.25
+    detections = []
 
     if color_space == 'GRAY':
         frames_acc = np.zeros((frame_height, frame_width), dtype='float')
@@ -68,9 +70,6 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
         ## Extract the foreground from the rest 75 % of the frames 
 
         masks = []
-        
-        
-        detections = dict()
 
         while flag:
             flag, srcFrame = capture_frames.read()
@@ -135,25 +134,22 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
             max_size = 1000000
             
             for i in range(nlabels):
-                
                 if stats[i][4] >= min_size and stats[i][4] <= max_size and (
                     stats[i, cv2.CC_STAT_WIDTH] / stats[i, cv2.CC_STAT_HEIGHT]) < 2.8:
-
+                    detectionDict = {}
+                    detectionDict['frame'] = int(float(iter_frame))
+                    detectionDict['left'] = int(float(stats[i, cv2.CC_STAT_LEFT]))
+                    detectionDict['top'] = int(float(stats[i, cv2.CC_STAT_TOP]))
+                    detectionDict['width'] = int(float(stats[i, cv2.CC_STAT_WIDTH]))
+                    detectionDict['height'] = int(float(stats[i, cv2.CC_STAT_HEIGHT]))
+                    detections.append(detectionDict)
                     bbox = [stats[i, cv2.CC_STAT_LEFT], stats[i, cv2.CC_STAT_TOP], stats[i, cv2.CC_STAT_WIDTH], stats[i, cv2.CC_STAT_HEIGHT]]
                     cv2.rectangle(srcFrame, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), (0, 0, 255), 7)
 
-                    # add the detections in the dictionary
-                    content = bbox
-                    content.extend([1.])  # confidence
-                    if str(iter_frame) in detections.keys():
-                        detections[str(iter_frame)].append(content)
-                    else:
-                        detections[str(iter_frame)] = [content]
-
-            plt.imshow(cv2.resize(cv2.cvtColor(srcFrame, cv2.COLOR_BGR2RGB), (0, 0), fx=scaling_factor, fy=scaling_factor))
-            plt.show(block=False)
-            plt.pause(0.05)
-            plt.clf()
+            #plt.imshow(cv2.resize(cv2.cvtColor(srcFrame, cv2.COLOR_BGR2RGB), (0, 0), fx=scaling_factor, fy=scaling_factor))
+            #plt.show(block=False)
+            #plt.pause(0.05)
+            #plt.clf()
 
             # plt.imshow(cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), (0,0), fx=rescaling_factor, fy=rescaling_factor))
 
@@ -162,114 +158,60 @@ def adaptive_modelling_background(video_path, alpha_factor=1.5, rho_factor=0.1, 
 
 
 
-def main(alpha, rho):
+def main():
     # path = '../../Datasets/AICity_data/AICity_data/train/S03/c010/vdo.avi'
     # path_to_save_adap = '../../Datasets/AICity_data/AICity_data/train/S03/c010/maskAdap/'
     # path_roi = '../../Datasets/AICity_data/AICity_data/train/S03/c010/roi.jpg'
 
-    path = './Datasets/AICity_data/AICity_data/train/S03/c010/vdo.avi'
-    path_to_save_adap = './Datasets/AICity_data/AICity_data/train/S03/c010/maskAdap/'
-    path_roi = './Datasets/AICity_data/AICity_data/train/S03/c010/roi.jpg'
+    path = './Datasets/AICity/train/S03/c010/vdo.avi'
+    path_to_save_adap = './Datasets/AICity/train/S03/c010/maskAdap/'
+    path_roi = './Datasets/AICity/train/S03/c010/roi.jpg'
 
     mask_roi = cv2.imread(path_roi, cv2.IMREAD_GRAYSCALE)
 
-    bboxes_detections, training_frames = adaptive_modelling_background(path, alpha_factor=alpha, rho_factor=rho, mask_roi=mask_roi, path_to_save=None
-                                                             ,color_space='YUV')
+    video_length = 2141
+    video_split_ratio = 0.25
 
     # bboxes_gt, num_instances_gt = get_gt_bboxes()
-    groundTruth = read_annotations('/Datasets/aicity_annotations.xml', 2141)
-    # get the number of instances in the validation split (needed to calculate the number of FN and the recall)
-    # num_instances_validation = 0
-    # for key in bboxes_gt.keys():
-    #     if int(key) > trainingFrames:
-    #         num_instances_validation += len(bboxes_gt[key])
-    IoU_threshold = 0.5
-    
-    mAP=calculate_mAP(groundTruth, bboxes_detections, IoU_threshold=0.5, have_confidence = True, verbose = False)
+    print('Reading and filtering ground truth')
+    groundTruth = read_annotations('Datasets/AICity/aicity_annotations.xml', 2141)
+    gt_filtered = [x for x in groundTruth if x['frame'] > int(video_length * video_split_ratio)]
 
-    
-    # TP, FP, FN, scores = evaluation_detections(threshold, bboxes_gt, bboxes_detected, num_instances_validation, trainingFrames)
-    # print("tp: ", TP, "fp: ", FP, "fn: ", FN)
-    # pr, pinterps, idxs_interpolations, mAP, APs = compute_map(scores, num_instances_validation)
+    rSearchIterations = 5
 
-    print("map: ", mAP)
-    # plot_pr(pr, threshold, pinterps, idxs_interpolations, APs)  # plot mAP
+    params = {}
+    params['alpha'] = np.arange(3, 10, 0.5)
+    params['rho'] = np.arange(0.25, 1, 0.05)
 
-    # bboxes_gt, num_instances_gt = get_gt_bboxes()  # load the bboxes from the gt again
-    # show_bboxes(path, bboxes_gt, bboxes_detected)  # show the bounding boxes
+    # Generation of parameter candidates
+    randomParameters = list(ParameterSampler(params, n_iter=rSearchIterations))
+    bestIteration = 0
+    bestScore = 0
+
+    for i, combination in enumerate(randomParameters):
+        print("Trial " + str(i) + " out of " + str(rSearchIterations))
+        print("Testing the parameters:")
+        print(combination)
+        # Suppress stdout from the Gaussian modeling function
+        #text_trap = io.StringIO()
+        #sys.stdout = text_trap
+
+        bboxes_detections, training_frames = adaptive_modelling_background(path, alpha_factor=combination['alpha'], rho_factor=combination['rho'],
+                                                                           mask_roi=mask_roi, path_to_save=None
+                                                                           , color_space='YUV')
+
+        mAP = calculate_mAP(gt_filtered, bboxes_detections, IoU_threshold=0.5, have_confidence=True, verbose=False)
+
+        # now restore stdout function
+        #sys.stdout = sys.__stdout__
+
+        if mAP > bestScore:
+            bestScore = mAP
+            bestIteration = i
+
+    print("The best combination of parameters, with a mAP of " + str(bestScore) + " was:")
+    print(randomParameters[bestIteration])
 
 
 if __name__ == "__main__":
-    search_space = [(3, 0.5), (4, 0.5), (5, 0.5), (6, 0.5), (7, 0.5)]
-    # I've commented all the prints for now so I can see the scores outputed for every configuration without too
-    # much stuff in between
-    for config in search_space:
-        print("trying alpha - rho: ", config[0], " - ", config[1])
-        main(config[0], config[1])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    main()
