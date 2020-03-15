@@ -44,8 +44,6 @@ we used in the following weeks.
 + P. KaewTraKulPong et.al. An improved adaptive background mixture model for real-time tracking with shadow detection. In Video-Based Surveillance Systems, 2002. Implementation: BackgroundSubtractorMOG (OpenCV)
 + Z. Zivkovic et.al. Efficient adaptive density estimation per image pixel for the task of background subtraction, Pattern Recognition Letters, 2005. Implementation: BackgroundSubtractorMOG2 (OpenCV)
 + L. Guo, et.al. Background subtraction using local svd binary pattern. CVPRW, 2016. Implementation: BackgroundSubtractorLSBP (OpenCV)
-+ St-Charles, Pierre-Luc, and Guillaume-Alexandre Bilodeau. Improving Background Subtraction using Local Binary Similarity Patterns. Applications of Computer Vision (WACV), 2014. Implementation: LOBSTER (github)
-+ M. Braham et.al. Deep background subtraction with scene-specific convolutional neural networks. In International Conference on Systems, Signals and Image Processing, 2016. No implementation (https://github.com/SaoYan/bgsCNN similar?)
 
 #### Task 4: Color sequences
 + Update with support color sequences
@@ -74,9 +72,6 @@ We try different data partitions:
 ### Week 4
 
 ### Week 5
-
-
-
 
 
 
