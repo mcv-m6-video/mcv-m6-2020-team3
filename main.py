@@ -4,7 +4,10 @@ import random
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import skimage
-
+import cv2
+import utils_w3 as utw3
+from utils_Gaussian import read_video_and_divide, calculate_mean_std_first_part_video, calculate_mask, find_detections
+from tqdm import tqdm
 # Root directory of the project
 ROOT_DIR = os.path.abspath("./Mask_RCNN")
 
@@ -104,10 +107,7 @@ visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
                             class_names, r['scores'])
 
 '''
-import cv2
-import utils
-from utils_Gaussian import read_video_and_divide, calculate_mean_std_first_part_video, calculate_mask, find_detections
-from tqdm import tqdm
+
 
 video_length = 200
 #video_length = 2141
@@ -121,9 +121,9 @@ roi_path = 'Datasets/AICity_data/train/S03/c010/roi.jpg'
 #roi = cv2.cvtColor(cv2.imread(roi_path))
 noisy_gt_boxes = []
 
-ver = False
+ver = True
 print("Reading annotations...")
-groundTruth = utils.read_annotations(groundtruth_xml_path, video_length)
+groundTruth = utw3.read_annotations(groundtruth_xml_path, video_length)
 gt_filtered = [x for x in groundTruth if x['frame'] > int(video_length * video_split_ratio)]
 
 
@@ -184,30 +184,70 @@ for i in tqdm(range(video_first_part.shape[0])):
     #         detection['height'] = box_h
     #         detections.append(detection)
     # Run RPN sub-graph
-    # pillar = model.keras_model.get_layer("ROI").output  # node to start searching from
-    # h, w = image.shape[:2]
-    # # TF 1.4 and 1.9 introduce new versions of NMS. Search for all names to support TF 1.3~1.10
-    # nms_node = model.ancestor(pillar, "ROI/rpn_non_max_suppression:0")
-    # # if nms_node is None:
-    # #     nms_node = model.ancestor(pillar, "ROI/rpn_non_max_suppression/NonMaxSuppressionV2:0")
-    # if nms_node is None:  # TF 1.9-1.10
-    #     nms_node = model.ancestor(pillar, "ROI/rpn_non_max_suppression/NonMaxSuppressionV3:0")
-    #
-    # rpn = model.run_graph([image], [
-    #     ("rpn_class", model.keras_model.get_layer("rpn_class").output),
-    #     ("pre_nms_anchors", model.ancestor(pillar, "ROI/pre_nms_anchors:0")),
-    #     ("refined_anchors", model.ancestor(pillar, "ROI/refined_anchors:0")),
-    #     ("refined_anchors_clipped", model.ancestor(pillar, "ROI/refined_anchors_clipped:0")),
-    #     ("post_nms_anchor_ix", nms_node),
-    #     ("proposals", model.keras_model.get_layer("ROI").output),
-    # ])
-    # # Show top anchors with refinement. Then with clipping to image boundaries
-    # limit = 50
-    # ax = get_ax(1, 2)
-    # shape = (image.shape[0], image.shape[1])
-    # pre_nms_anchors = utils.denorm_boxes(rpn["pre_nms_anchors"][0], shape)
-    # refined_anchors = utils.denorm_boxes(rpn["refined_anchors"][0], shape)
-    # refined_anchors_clipped = utils.denorm_boxes(rpn["refined_anchors_clipped"][0], shape)
-    # visualize.draw_boxes(image, boxes=pre_nms_anchors[:limit],
-    #                      refined_boxes=refined_anchors[:limit], ax=ax[0])
-    # visualize.draw_boxes(image, refined_boxes=refined_anchors_clipped[:limit], ax=ax[1])
+    pillar = model.keras_model.get_layer("ROI").output  # node to start searching from
+    h, w = image.shape[:2]
+    # TF 1.4 and 1.9 introduce new versions of NMS. Search for all names to support TF 1.3~1.10
+    nms_node = model.ancestor(pillar, "ROI/rpn_non_max_suppression:0")
+    # if nms_node is None:
+    #     nms_node = model.ancestor(pillar, "ROI/rpn_non_max_suppression/NonMaxSuppressionV2:0")
+    if nms_node is None:  # TF 1.9-1.10
+        nms_node = model.ancestor(pillar, "ROI/rpn_non_max_suppression/NonMaxSuppressionV3:0")
+
+    rpn = model.run_graph([image], [
+        ("rpn_class", model.keras_model.get_layer("rpn_class").output),
+        ("pre_nms_anchors", model.ancestor(pillar, "ROI/pre_nms_anchors:0")),
+        ("refined_anchors", model.ancestor(pillar, "ROI/refined_anchors:0")),
+        ("refined_anchors_clipped", model.ancestor(pillar, "ROI/refined_anchors_clipped:0")),
+        ("post_nms_anchor_ix", nms_node),
+        ("proposals", model.keras_model.get_layer("ROI").output),
+    ])
+    # Show top anchors with refinement. Then with clipping to image boundaries
+    limit = 50
+    ax = get_ax(1, 2)
+    shape = (image.shape[0], image.shape[1])
+    pre_nms_anchors = utils.denorm_boxes(rpn["pre_nms_anchors"][0], shape)
+    refined_anchors = utils.denorm_boxes(rpn["refined_anchors"][0], shape)
+    refined_anchors_clipped = utils.denorm_boxes(rpn["refined_anchors_clipped"][0], shape)
+    visualize.draw_boxes(image, boxes=pre_nms_anchors[:limit],
+                         refined_boxes=refined_anchors[:limit], ax=ax[0])
+    visualize.draw_boxes(image, refined_boxes=refined_anchors_clipped[:limit], ax=ax[1])
+
+    # Show refined anchors after non-max suppression
+    limit = 50
+    ixs = rpn["post_nms_anchor_ix"][:limit]
+    visualize.draw_boxes(image, refined_boxes=refined_anchors_clipped[ixs], ax=get_ax())
+
+    # Show final proposals
+    # These are the same as the previous step (refined anchors
+    # after NMS) but with coordinates normalized to [0, 1] range.
+    limit = 50
+    # Convert back to image coordinates for display
+    h, w = image.shape[:2]
+    proposals = rpn['proposals'][0, :limit] * np.array([h, w, h, w])
+    visualize.draw_boxes(image, refined_boxes=proposals, ax=get_ax())
+    # Get input and output to classifier and mask heads.
+    mrcnn = model.run_graph([image], [
+        ("proposals", model.keras_model.get_layer("ROI").output),
+        ("probs", model.keras_model.get_layer("mrcnn_class").output),
+        ("deltas", model.keras_model.get_layer("mrcnn_bbox").output),
+        ("masks", model.keras_model.get_layer("mrcnn_mask").output),
+        ("detections", model.keras_model.get_layer("mrcnn_detection").output),
+    ])
+
+    # Get detection class IDs. Trim zero padding.
+    det_class_ids = mrcnn['detections'][0, :, 4].astype(np.int32)
+    det_count = np.where(det_class_ids == 0)[0][0]
+    det_class_ids = det_class_ids[:det_count]
+    detections = mrcnn['detections'][0, :det_count]
+
+    print("{} detections: {}".format(
+        det_count, np.array(class_names)[det_class_ids]))
+
+    captions = ["{} {:.3f}".format(class_names[int(c)], s) if c > 0 else ""
+                for c, s in zip(detections[:, 4], detections[:, 5])]
+    visualize.draw_boxes(
+        image,
+        refined_boxes=utils.denorm_boxes(detections[:, :4], image.shape[:2]),
+        visibilities=[2] * len(detections),
+        captions=captions, title="Detections",
+        ax=get_ax())
