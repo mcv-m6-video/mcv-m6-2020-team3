@@ -12,7 +12,7 @@ from copy import deepcopy
 from collections import defaultdict
 from numpy import random
 from skimage.measure import label, regionprops
-from detection import Detection
+# from detection import Detection
 
 def getDetections(detectionFilePath):
     with open(detectionFilePath, 'r') as f:
