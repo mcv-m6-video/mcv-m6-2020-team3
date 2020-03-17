@@ -29,5 +29,3 @@ class AICityConfig(Config):
 
     # use small validation steps since the epoch is small
     VALIDATION_STEPS = 5
-
-    IMAGE_SHAPE = [1080//4, 1920//4, 3]

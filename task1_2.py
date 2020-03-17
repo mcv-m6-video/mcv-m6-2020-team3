@@ -58,7 +58,9 @@ config.display()
 dataset_train = AICityDataset()
 dataset_train.get_Images(framePath=video_path, length=video_length, isTrain=True, trainSplit=0.25, method="first", height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
 dataset_train.prepare()
-dataset_val = dataset_train
+dataset_val = AICityDataset()
+dataset_train.get_Images(framePath=video_path, length=video_length, isTrain=False, trainSplit=0.25, method="first", height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
+dataset_train.prepare()
 
 # Validation dataset
 """dataset_val = SD.ShapesDataset()
@@ -96,10 +98,10 @@ elif init_with == "last":
 # which layers to train by name pattern.
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
-            epochs=1,
+            epochs=10,
             layers='heads')
 #
-print (dataset_train)
+#print (dataset_train)
 # Fine tune all layers
 # Passing layers="all" trains all layers. You can also
 # pass a regular expression to select which layers to
@@ -135,14 +137,14 @@ log("gt_class_id", gt_class_id)
 log("gt_bbox", gt_bbox)
 log("gt_mask", gt_mask)
 
-visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id,
-                            dataset_train.class_names, figsize=(8, 8))
+"""visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id,
+                            dataset_train.class_names, figsize=(8, 8))"""
 
 results = model.detect([original_image], verbose=1)
 
 r = results[0]
-visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'],
-                            dataset_val.class_names, r['scores'], ax=get_ax())
+"""visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'],
+                            dataset_val.class_names, r['scores'], ax=get_ax())"""
 '''We can see that with just 3 epochs of training we obtain decent results.
 
 Evaluation
@@ -151,21 +153,21 @@ We will calculate our mean Average Precissio (mAP) with Intersection over Union 
 
 # Compute VOC-Style mAP @ IoU=0.5
 # Running on 10 images. Increase for better accuracy.
-# image_ids = np.random.choice(dataset_val.image_ids, 10)
-# APs = []
-# for image_id in image_ids:
-#     # Load image and ground truth data
-#     image, image_meta, gt_class_id, gt_bbox, gt_mask = \
-#         modellib.load_image_gt(dataset_val, inference_config,
-#                                image_id, use_mini_mask=False)
-#     molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
-#     # Run object detection
-#     results = model.detect([image], verbose=0)
-#     r = results[0]
-#     # Compute AP
-#     AP, precisions, recalls, overlaps = \
-#         utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
-#                          r["rois"], r["class_ids"], r["scores"], r['masks'])
-#     APs.append(AP)
-#
-# print("mAP: ", np.mean(APs))
+image_ids = np.random.choice(dataset_val.image_ids, 10)
+APs = []
+for image_id in image_ids:
+    #Load image and ground truth data
+    image, image_meta, gt_class_id, gt_bbox, gt_mask = \
+        modellib.load_image_gt(dataset_val, inference_config,
+                               image_id, use_mini_mask=False)
+    molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
+    #Run object detection
+    results = model.detect([image], verbose=0)
+    r = results[0]
+    #Compute AP
+    AP, precisions, recalls, overlaps = \
+        utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
+                         r["rois"], r["class_ids"], r["scores"], r['masks'])
+    APs.append(AP)
+
+print("mAP: ", np.mean(APs))
