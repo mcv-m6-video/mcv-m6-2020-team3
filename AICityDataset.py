@@ -3,7 +3,7 @@ from mrcnn import utils
 import glob
 import cv2
 from utils_tracking import read_tracking_annotations
-from utils_w3 import tf_bbox2mask
+from utils_w3 import bbox2mask
 from sklearn.model_selection import train_test_split
 
 import numpy as np
@@ -17,7 +17,7 @@ class AICityDataset(utils.Dataset):
             currFrame = elem['frame'] 
             groupedGT[currFrame].append(elem)
         self.groundTruth = groupedGT
-        self.add_class("AICity", 1, "Car")
+        self.add_class("AICity", 0, "Car")
         framePaths = glob.glob(framePath + '/*.jpg')
         framePaths = sorted(framePaths)
         framePaths = framePaths[0:length] if length is not None else framePaths
@@ -41,12 +41,12 @@ class AICityDataset(utils.Dataset):
 
         for i, detection in enumerate(detections):
             #All detections are cars
-            cls_ids[i] = 1
+            cls_ids[i] = 0
             y1 = detection['top']
             x1 = detection['left']
             y2 = detection['top'] + detection['height']
             x2 = detection['left'] + detection['width']
-            tmpMask = tf_bbox2mask(y1, x1, y2, x2, 1080, 1920)
+            tmpMask = bbox2mask(y1, x1, y2, x2, 1080, 1920)
             tmpMask = cv2.resize(tmpMask, (info['height'], info['width']))
             mask[:,:,i] = tmpMask
         return mask.astype(np.bool), cls_ids.astype(np.int32)
