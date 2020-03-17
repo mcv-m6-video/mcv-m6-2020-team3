@@ -3,7 +3,7 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-detectionFileFolder = 'Datasets/AICity/train/S03/c010/det/'
+detectionFileFolder = '../Datasets/AICity/train/S03/c010/det/'
 detectionFileNames = ['det_mask_rcnn.txt', 'det_ssd512.txt', 'det_yolo3.txt']
 detectorNames = ['Mask RCNN', 'SSD512', 'YOLO3']
 
@@ -11,7 +11,7 @@ detectorNames = ['Mask RCNN', 'SSD512', 'YOLO3']
 video_length = 100
 
 print("Reading annotations...")
-groundTruth = utils.read_annotations('Datasets/AICity/aicity_annotations.xml', video_length)
+groundTruth = utils.read_annotations('../Datasets/AICity/aicity_annotations.xml', video_length)
 groundTruthPerFrame = utils.getDetectionsPerFrame(groundTruth)
 
 verbose = False
@@ -29,7 +29,7 @@ for noise_range in noise_range_list:
     #                                                rescaling_factor=[1.0-noise_range, 1.0+noise_range],
     #                                                translation_factor=0, prob_discard=0.0)
 
-    noisy_gt_boxes = utils.add_noise_to_detections('Datasets/AICity/aicity_annotations.xml', video_length,
+    noisy_gt_boxes = utils.add_noise_to_detections('../Datasets/AICity/aicity_annotations.xml', video_length,
                                                    rescaling_factor=[1.0, 1.0],
                                                    translation_factor=noise_range*10.0, prob_discard=0.0)
 
