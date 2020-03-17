@@ -1,4 +1,5 @@
 import os
+import pickle
 import numpy as np
 import sys
 import random
@@ -103,12 +104,19 @@ video_length = 200
 # video_length = 2141
 # video_length = 100
 video_split_ratio = 0.25
-# video_path = "./Datasets/AICity_data/train/S03/c010/vdo.avi"
 video_path = "./Datasets/AICity/frames/"
 groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
-# groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
 roi_path = 'Datasets/AICity_data/train/S03/c010/roi.jpg'
-# roi = cv2.cvtColor(cv2.imread(roi_path))
+#Given detections
+detections_path = "./Datasets/AICity_data/train/S03/c010/det/"
+#detectors = ["det_ssd512.txt", "det_mask_rcnn.txt", "det_yolo3.txt"]
+detectors = ["det_mask_rcnn.txt"]
+roi_path = './Datasets/AICity_data/train/S03/c010/roi.jpg'
+
+# Flags
+use_pkl = True
+display_frames = False
+export_frames = False
 ver = True
 print("Reading annotations...")
 groundTruth = utw3.read_annotations(groundtruth_xml_path, video_length)
