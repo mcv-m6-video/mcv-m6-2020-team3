@@ -9,8 +9,8 @@ import cv2
 import utils_w3 as utw3
 from utils_Gaussian import read_video_and_divide, calculate_mean_std_first_part_video, calculate_mask, find_detections
 from tqdm import tqdm
-import ShapesConfig as SC
-import ShapesDataset as SD
+from AICityConfig import AICityConfig
+from AICityDataset import AICityDataset
 # Root directory of the project
 ROOT_DIR = os.path.abspath("./Mask_RCNN")
 
@@ -25,7 +25,7 @@ from mrcnn.model import log
 
 
 #%matplotlib inline
-class InferenceConfig(SC.ShapesConfig):
+class InferenceConfig(AICityConfig):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
 
@@ -40,41 +40,35 @@ if not os.path.exists(COCO_MODEL_PATH):
 
 # # Path to Shapes trained weights
 SHAPES_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_shapes.h5")
-sys.path.append(os.path.join(ROOT_DIR, "samples/coco/"))
-print (ROOT_DIR)
-import coco
-config = coco.CocoConfig()
 
 video_length = 200
 # video_length = 2141
 video_split_ratio = 0.25
-video_path = "./Datasets/AICity/frames/"
+video_path = "./Datasets/AICity/frames"
 groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
 roi_path = 'Datasets/AICity_data/train/S03/c010/roi.jpg'
-ver = True
+ver = False
 print("Reading annotations...")
 groundTruth = utw3.read_annotations(groundtruth_xml_path, video_length)
 gt_filtered = [x for x in groundTruth if x['frame'] > int(video_length * video_split_ratio)]
-#TODO: dataset_train= video_first_part?
-#TODO: dataset_val = video_second_part
-video_first_part, video_second_part, divide_frame = \
-    read_video_and_divide(video_path, video_length=video_length, video_split_ratio=video_split_ratio)
-config = SC.ShapesConfig()
+
+config = AICityConfig()
 config.display()
 # Training dataset
-dataset_train = SD.ShapesDataset()
-dataset_train.load_shapes(500, config.IMAGE_SHAPE[0], config.IMAGE_SHAPE[1])
+dataset_train = AICityDataset()
+dataset_train.get_Images(framePath=video_path, length=video_length, isTrain=True, trainSplit=0.25, method="first", height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
 dataset_train.prepare()
+dataset_val = dataset_train
 
 # Validation dataset
-dataset_val = SD.ShapesDataset()
+"""dataset_val = SD.ShapesDataset()
 dataset_val.load_shapes(50, config.IMAGE_SHAPE[0], config.IMAGE_SHAPE[1])
 dataset_val.prepare()
 image_ids = np.random.choice(dataset_train.image_ids, 4)
 for image_id in image_ids:
     image = dataset_train.load_image(image_id)
     mask, class_ids = dataset_train.load_mask(image_id)
-    visualize.display_top_masks(image, mask, class_ids, dataset_train.class_names)
+    visualize.display_top_masks(image, mask, class_ids, dataset_train.class_names)"""
 
 # for i in tqdm(range(video_second_part.shape[0])):
 # Create model in training mode

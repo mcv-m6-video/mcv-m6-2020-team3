@@ -14,6 +14,7 @@ from collections import defaultdict
 from numpy import random
 from skimage.measure import label, regionprops
 import matplotlib.patches as mpatches
+import tensorflow as tf
 #from detection import Detection
 
 import imageio
@@ -682,3 +683,20 @@ def addBboxesToFrames_gif(framesPath, detections, groundTruth, name, length=None
         prevFrame = frame
     imageio.mimsave(name + '.gif', images)
 
+def tf_bbox2mask(y1, x1, y2, x2, img_H, img_W):
+    ## Repeat for each row or column
+    y1_transposed = tf.expand_dims(tf.tile(y1,[img_W]), 0)
+    x1_transposed = tf.expand_dims(tf.tile(x1,[img_H]), 1)
+    y2_transposed = tf.expand_dims(tf.tile(y2,[img_W]), 0)
+    x2_transposed = tf.expand_dims(tf.tile(x2,[img_H]), 1)
+    ## Get the range grid
+    range_row = tf.cast(tf.expand_dims(tf.range(0, img_H, 1), 1), tf.int32)
+    range_col = tf.cast(tf.expand_dims(tf.range(0, img_W, 1), 0), tf.int32)
+    ## Generate bollean masks
+    mask_y1 = tf.less(y1_transposed, range_row)
+    mask_x1 = tf.less(x1_transposed, range_col)
+    mask_y2 = tf.less(range_row, y2_transposed)
+    mask_x2 = tf.less(range_col, x2_transposed)
+
+    result = tf.to_float(mask_y1)*tf.to_float(mask_x1)*tf.to_float(mask_y2)*tf.to_float(mask_x2)
+    return result
