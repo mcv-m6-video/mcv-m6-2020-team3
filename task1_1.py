@@ -100,22 +100,13 @@ model.load_weights(weights_path, by_name=True)
 '''
 Test the network with different images taken from our dataset. Take into account that the network can only predict classes from COCO.
 '''
-#video_length = 200
 video_length = 2141
-# video_length = 100
 video_split_ratio = 1
-# video_path = "./Datasets/AICity_data/train/S03/c010/vdo.avi"
 video_path = "./Datasets/AICity/frames/"
 groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
-# groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
 roi_path = 'Datasets/AICity_data/train/S03/c010/roi.jpg'
-# roi = cv2.cvtColor(cv2.imread(roi_path))
 ver = False
 print("Reading annotations...")
-#
-# video_first_part, video_second_part, divide_frame = \
-#     read_video_and_divide(video_path, video_length=video_length, video_split_ratio=video_split_ratio)
-# for i in tqdm(range(video_second_part.shape[0])):
 detections = []
 frame_id = 0
 for i in tqdm(range(video_length)):
@@ -149,19 +140,9 @@ for i in tqdm(range(video_length)):
     if ver:
         visualize.display_instances(image, boxes, mask, class_id,
                                     class_names, confidence)
-#mAP = utils.calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=False)
 groundTruth, tracks_gt_list = read_tracking_annotations(groundtruth_xml_path, video_length)
 mAP = utw3.calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=True, verbose=True)
-print(mAP)
-# # Compute AP
-# mAP_random_list = []
-# for i in range(5):
-#     random.shuffle(detections)
-#     mAP = utw3.calculate_mAP(gt_filtered, detections, IoU_threshold=0.5, have_confidence=False, verbose=True)
-#     mAP_random_list.append(mAP)
-# mAP_mean = np.mean(mAP_random_list)
-#
-# print(mAP_mean)
+
 
     # '''Stage 1: Region Proposal Network
     # The Region Proposal Network (RPN) runs a lightweight binary classifier on a lot of boxes (anchors) over the image and returns object/no-object scores. Anchors with high objectness score (positive anchors) are passed to the stage two to be classified.
