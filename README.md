@@ -44,45 +44,34 @@ we used in the following weeks.
 + P. KaewTraKulPong et.al. An improved adaptive background mixture model for real-time tracking with shadow detection. In Video-Based Surveillance Systems, 2002. Implementation: BackgroundSubtractorMOG (OpenCV)
 + Z. Zivkovic et.al. Efficient adaptive density estimation per image pixel for the task of background subtraction, Pattern Recognition Letters, 2005. Implementation: BackgroundSubtractorMOG2 (OpenCV)
 + L. Guo, et.al. Background subtraction using local svd binary pattern. CVPRW, 2016. Implementation: BackgroundSubtractorLSBP (OpenCV)
-+ St-Charles, Pierre-Luc, and Guillaume-Alexandre Bilodeau. Improving Background Subtraction using Local Binary Similarity Patterns. Applications of Computer Vision (WACV), 2014. Implementation: LOBSTER (github)
-+ M. Braham et.al. Deep background subtraction with scene-specific convolutional neural networks. In International Conference on Systems, Signals and Image Processing, 2016. No implementation (https://github.com/SaoYan/bgsCNN similar?)
 
 #### Task 4: Color sequences
 + Update with support color sequences
 
 
 ### Week 3
+#### T1 Object Detection
+##### T1.1 Off-the-shelf
+Use Mask R-CNN object detector and we run it to detect cars in each frame (separately). The dataset used to train your network contains the class ‘car’.
+##### T1.2 Fine-tuning
+Fine tuning from ourdata will in general require two steps:
+  + Defining the new dataset 
+  + Fine-tuning the last layer(s) from a pre-trained model 
+  
+  
+We try different data partitions:
+  + Strategy A: First 25% frames for training. Second 75% for test.
+  + Strategy B: Random 25%
+  + Strategies C & D: Instead of 25%, try with different % for training/test partitions.
 
+#### T2 Object Tracking 
+##### T2.1 Tracking by Overlap
+##### T2.2 Tracking with a Kalman Filter
+#### T2.3 (optional)  IDF1 for Multiple Object Tracking
+#### T3 (optional) CVPR 2019 AI City Challenge 
 ### Week 4
 
 ### Week 5
-
-
-
-
-| Team  3  |                         |                      |                          |
-|----------|:-----------------------:|:--------------------:|:------------------------:|
-| Week 1   | [Slides][Week1-slides]  |   |
-| Week 2   | [Slides][Week2-slides]  |  [Report][Week2-report]  |
-| Week 3   | [Slides][Week3-slides]  |  [Report][Week3-report]  |
-| Week 4   | [Slides][Week4-slides]  |  [Report][Week4-report]  |
-| Week 5   | [Slides][Week5-slides]  |  [Report][Week5-report]  |
-
-
-
-[Week1-slides]: https://docs.google.com/presentation/d/1AVxaY5epmUaZSwrJ3hu4xbOBTjpmJxgu0Pms7UMf96Q/edit#slide=id.p
-
-[Week2-slides]: 
-[team3-report]: 
-
-[Week3-slides]: 
-[team4-report]: 
-
-[Week4-slides]: 
-[team5-report]: 
-
-[Week5-slides]: 
-[team6-report]:
 
 
 

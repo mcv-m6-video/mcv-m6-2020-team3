@@ -8,7 +8,7 @@ import numpy as np
 from skimage import measure
 import imageio
 
-#import skvideo.io
+import skvideo.io
 
 
 
@@ -40,8 +40,6 @@ def read_video_and_divide(video_path, video_length, video_split_ratio):
     # video = cv2.VideoCapture(video_path)
 
     divide_frame = int(video_length*video_split_ratio)
-    print('divide_frame')
-    print(divide_frame)
 
     for i in tqdm(range(video_length)):
         # if video.isOpened():
@@ -56,18 +54,18 @@ def read_video_and_divide(video_path, video_length, video_split_ratio):
 
         frame = cv2.imread(filename)
         if i == 0:
-            video_first_part = np.zeros((divide_frame, frame.shape[0], frame.shape[1],3), dtype="uint8")
-            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            video_first_part = np.zeros((divide_frame, frame.shape[0], frame.shape[1]), dtype="uint8")
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             video_first_part[i, :, :] = frame
         elif i < divide_frame:
-            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             video_first_part[i, :, :] = frame
         elif i == divide_frame:
-            video_second_part = np.zeros((video_length - divide_frame, frame.shape[0], frame.shape[1],3), dtype="uint8")
-            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            video_second_part = np.zeros((video_length - divide_frame, frame.shape[0], frame.shape[1]), dtype="uint8")
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             video_second_part[i - divide_frame, :, :] = frame
         else:
-            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             video_second_part[i-divide_frame, :, :] = frame
 
     print("finish reading video")

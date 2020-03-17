@@ -1,83 +1,143 @@
-from __future__ import print_function
-import cv2 as cv
 import os
-import sys
-import utils
 import numpy as np
-from tqdm import tqdm
+import sys
+import random
+import tensorflow as tf
 import matplotlib.pyplot as plt
-import argparse
-import t3
+import skimage
+import cv2
+import utils_w3 as utw3
+from utils_Gaussian import read_video_and_divide, calculate_mean_std_first_part_video, calculate_mask, find_detections
+from tqdm import tqdm
+# Root directory of the project
+ROOT_DIR = os.path.abspath("./Mask_RCNN")
 
-if __name__ == "__main__":
-    # Read groundtruth
-    ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-    path = ROOT_DIR+'/Datasets/AICity/frames/'
-    typeAlg = 'MOG2_notshadows'
-    inputtype = 'sequence'
-    #numeberofimages = 150 #(nuumber of images)
-    numeberofimages = 2141
-    save_path = ROOT_DIR + '/output_frames/' + typeAlg + '/'
-    print("Reading annotations...")
-    backSub = t3.chooseAlgorithm(typeAlg)
-    verbose = False
-    IoU_mean_list = []
-    mAP_mean_list = []
-    detections = []
-    pbar = tqdm(total=numeberofimages)
-    iousPerFrame_list = []
-    mAP_list = []
-    detections = []
-    ch_color = True
-    space = 'hsv'
-    showme = True
+# Import Mask RCNN
+sys.path.append(ROOT_DIR)  # To find local version of the library
+from mrcnn import utils
+from mrcnn import visualize
+from mrcnn.config import Config
+from mrcnn.visualize import display_images
+import mrcnn.model as modellib
+from mrcnn.model import log
 
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-    for x in range(1, numeberofimages):
 
-        # read images
-        pathim = path+'%05d.jpg' % x
-        print(pathim)
-        frame = cv.imread(pathim)
-        #TODO (task 4 -GABY -KEYAO)
-        #pre- processim (change space like YUV or lab)
-        if ch_color :
-            im_change = utils.chage_color_space(frame, space)
-        if (showme):
-            cv.imshow('hsv_img', im_change)
-        cv.imwrite(save_path+'hsv'+'frame_' + '%05d.jpg' % x,frame)
-        #TODO (TASK 1  Gaussian modelling - YIXIONG)
-        #IMPUT IMAGE (TRY GRY SCALE AND COLOR OPTION) OUTPUT MASK
+#%matplotlib inline
 
-        #TODO (TASK 2.1  Adaptive modelling - Obtain first the best 𝛼 for non-recursive, and later estimate ⍴ for the recursive cases- SANKEY)
-        #IMPUT IMAGE (TRY GRY SCALE AND COLOR OPTION) OUTPUT MASK
+# Directory to save logs and trained model
+MODEL_DIR = os.path.join(ROOT_DIR, "logs")
 
-        #TODO (TASK 2.2  Adaptive modelling - Optimize (𝛼, ⍴) together with grid search or random search - MARC)
-        # IMPUT IMAGE (TRY GRY SCALE AND COLOR OPTION) OUTPUT MASK
+# Local path to trained weights file
+COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
+# Download COCO trained weights from Releases if needed
+if not os.path.exists(COCO_MODEL_PATH):
+    utils.download_trained_weights(COCO_MODEL_PATH)
 
-        #TODO (TASK 3  Comparison with state - of - the - art - GABY)
-        fgMask = backSub.apply(frame)
-        fgmask_out = cv.resize(fgMask, (0, 0), fx=0.3, fy=0.3)
-        cv.imwrite(save_path+'frame_' + '%05d.jpg' % x, fgmask_out.astype('uint8') * 255)
-        if (showme):
-            cv.imshow('Frame', frame)
-            cv.imshow('FG Mask_Antes', fgMask)
-        keyboard = cv.waitKey(30)
-        #TODO (TASK 4  Post Processing - GABY )
-        maskMOG2 = utils.morphological_filtering(fgMask)
-        if (showme):
-            cv.imshow('FG Mask', maskMOG2)
-        detections = utils.candidate_window(showme, save_path, frame, x, maskMOG2, detections)
-        pbar.update(1)
-        keyboard = cv.waitKey(30)
-        if keyboard == 'q' or keyboard == 27:
-            break
-    cv.destroyAllWindows()
-    pbar.close()
+# # Path to Shapes trained weights
+SHAPES_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_shapes.h5")
+sys.path.append(os.path.join(ROOT_DIR, "samples/coco/"))
+print (ROOT_DIR)
+import coco
+config = coco.CocoConfig()
+# Override the training configurations with a few
+# changes for inferencing.
+class InferenceConfig(config.__class__):
+    # Run detection on one image at a time
+    GPU_COUNT = 1
+    IMAGES_PER_GPU = 1
 
-    # TODO ALL TASKS - Evaluattion GABY -KEYAO
-    groundTruth = utils.read_annotations(ROOT_DIR + '/Datasets/AICity/aicity_annotations.xml', numeberofimages)
-    groundTruthPerFrame = utils.getDetectionsPerFrame(groundTruth)
-    #detectionsMOG_filtered = [x for x in detections if x.frame > int(2141 * 0.25)]
-    mAP = utils.calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=False)
+config = InferenceConfig()
+config.display()
+DEVICE = "/gpu:0"  # /cpu:0 or /gpu:0
+TEST_MODE = "inference"
+
+
+def get_ax(rows=1, cols=1, size=16):
+    """Return a Matplotlib Axes array to be used in
+    all visualizations in the notebook. Provide a
+    central point to control graph sizes.
+
+    Adjust the size attribute to control how big to render images
+    """
+    _, ax = plt.subplots(rows, cols, figsize=(size * cols, size * rows))
+    return ax
+# COCO Class names
+# Index of the class in the list is its ID. For example, to get ID of
+# the teddy bear class, use: class_names.index('teddy bear')
+class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
+               'bus', 'train', 'truck', 'boat', 'traffic light',
+               'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird',
+               'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear',
+               'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie',
+               'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
+               'kite', 'baseball bat', 'baseball glove', 'skateboard',
+               'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup',
+               'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+               'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza',
+               'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed',
+               'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
+               'keyboard', 'cell phone', 'microwave', 'oven', 'toaster',
+               'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
+               'teddy bear', 'hair drier', 'toothbrush']
+
+with tf.device(DEVICE):
+    model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config = config)
+
+# Set weights file path
+if config.NAME == "shapes":
+    weights_path = SHAPES_MODEL_PATH
+elif config.NAME == "coco":
+    weights_path = COCO_MODEL_PATH
+# Or, uncomment to load the last model you trained
+# weights_path = model.find_last()
+
+# Load weights
+print("Loading weights ", weights_path)
+model.load_weights(weights_path, by_name=True)
+
+
+'''
+Test the network with different images taken from our dataset. Take into account that the network can only predict classes from COCO.
+'''
+video_length = 200
+# video_length = 2141
+# video_length = 100
+video_split_ratio = 0.25
+# video_path = "./Datasets/AICity_data/train/S03/c010/vdo.avi"
+video_path = "./Datasets/AICity/frames/"
+groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
+# groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
+roi_path = 'Datasets/AICity_data/train/S03/c010/roi.jpg'
+# roi = cv2.cvtColor(cv2.imread(roi_path))
+ver = True
+print("Reading annotations...")
+groundTruth = utw3.read_annotations(groundtruth_xml_path, video_length)
+gt_filtered = [x for x in groundTruth if x['frame'] > int(video_length * video_split_ratio)]
+
+video_first_part, video_second_part, divide_frame = \
+    read_video_and_divide(video_path, video_length=video_length, video_split_ratio=video_split_ratio)
+# for i in tqdm(range(video_second_part.shape[0])):
+for i in tqdm(range(video_first_part.shape[0])):
+    image = video_second_part[i, :, :]
+    # Run detection
+    results = model.detect([image], verbose=1)
+    print('restuts:                            ')
+    print(results)
+
+    # Visualize results
+    r = results[0]
+    print('results[0]')
+    print(r)
+    print("r['rois']:  ")
+    print(r['rois'])
+    print("r['masks']:  ")
+    print(r['masks'])
+    print("r['class_ids']:")
+    print(r['class_ids'])
+    print("class_names: ")
+    print(class_names)
+    print("r['scores']:   ")
+    print(r['scores'])
+    if ver:
+        visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
+                                    class_names, r['scores'])
