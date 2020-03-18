@@ -44,8 +44,8 @@ def read_tracking_annotations(annotation_path, video_length):
             #if box is not None and (label == 'car' or label == 'bike'):    # Read cars and bikes
             if box is not None and label == 'car':                          # Read cars
 
-                if box.attrib['occluded'] == '1':                           # Discard occluded
-                    continue
+                #if box.attrib['occluded'] == '1':                           # Discard occluded
+                #    continue
 
                 #if label == 'car' and box[0].text == 'true':               # Discard parked cars
                 #    continue
