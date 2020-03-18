@@ -5,7 +5,7 @@ Note, frame starts from 1.
 """
 import pickle
 from utils_w3 import addBboxesToFrames, calculate_mAP, bb_iou
-from utils_tracking import read_tracking_annotations, compute_mAP_track
+from utils_tracking import read_tracking_annotations, compute_mAP_track, addTracksToFrames, addTracksToFrames_gif
 from tqdm import tqdm
 from track import Track
 
@@ -67,16 +67,23 @@ if __name__ == "__main__":
     with open(detections_filename, 'rb') as p:
         detections = pickle.load(p)
         p.close()
+
     print("Reading annotations...")
     # groundTruth = read_annotations(groundtruth_xml_path, video_length)
     groundTruth, tracks_gt_list = read_tracking_annotations(groundtruth_xml_path, video_length)
-    print("calculate mAP...")
-    mAP = calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=False, verbose=True)
-    print("mAP = ", mAP)
-
-    detections_tracks = find_tracking(detections, video_length)
-    mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
-    print("mAP_track = ", mAP_track)
+    # print("calculate mAP...")
+    # mAP = calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=True, verbose=True)
+    # print("mAP = ", mAP)
 
     # addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth, "test")
+
+    detections_tracks = find_tracking(detections, video_length)
+    # mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
+    # print("mAP_track = ", mAP_track)
+
+    # addTracksToFrames(video_path, detections_tracks, tracks_gt_list, start_frame=1, end_frame=1000, name="test")
+    addTracksToFrames_gif(video_path, detections_tracks, tracks_gt_list, start_frame=800, end_frame=930, name="test")
+
+
+
 
