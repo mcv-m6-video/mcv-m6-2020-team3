@@ -6,11 +6,12 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import skimage
 import cv2
+import pickle
 import utils_w3 as utw3
 from utils_Gaussian import read_video_and_divide, calculate_mean_std_first_part_video, calculate_mask, find_detections
 from tqdm import tqdm
-import ShapesConfig as SC
-import ShapesDataset as SD
+from AICityConfig import AICityConfig
+from AICityDataset import AICityDataset
 # Root directory of the project
 ROOT_DIR = os.path.abspath("./Mask_RCNN")
 
@@ -23,9 +24,18 @@ from mrcnn.visualize import display_images
 import mrcnn.model as modellib
 from mrcnn.model import log
 
+def get_ax(rows=1, cols=1, size=16):
+    """Return a Matplotlib Axes array to be used in
+    all visualizations in the notebook. Provide a
+    central point to control graph sizes.
+
+    Adjust the size attribute to control how big to render images
+    """
+    _, ax = plt.subplots(rows, cols, figsize=(size * cols, size * rows))
+    return ax
 
 #%matplotlib inline
-class InferenceConfig(SC.ShapesConfig):
+class InferenceConfig(AICityConfig):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
 
@@ -40,41 +50,35 @@ if not os.path.exists(COCO_MODEL_PATH):
 
 # # Path to Shapes trained weights
 SHAPES_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_shapes.h5")
-sys.path.append(os.path.join(ROOT_DIR, "samples/coco/"))
-print (ROOT_DIR)
-import coco
-config = coco.CocoConfig()
 
-video_length = 200
-# video_length = 2141
+# video_length = 200
+video_length = 2141
 video_split_ratio = 0.25
-video_path = "./Datasets/AICity/frames/"
+video_path = "./Datasets/AICity/frames"
 groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
 roi_path = 'Datasets/AICity_data/train/S03/c010/roi.jpg'
-ver = True
-print("Reading annotations...")
-groundTruth = utw3.read_annotations(groundtruth_xml_path, video_length)
-gt_filtered = [x for x in groundTruth if x['frame'] > int(video_length * video_split_ratio)]
-#TODO: dataset_train= video_first_part?
-#TODO: dataset_val = video_second_part
-video_first_part, video_second_part, divide_frame = \
-    read_video_and_divide(video_path, video_length=video_length, video_split_ratio=video_split_ratio)
-config = SC.ShapesConfig()
+showImages = False
+
+config = AICityConfig()
+method = 'interleaved'
 config.display()
 # Training dataset
-dataset_train = SD.ShapesDataset()
-dataset_train.load_shapes(500, config.IMAGE_SHAPE[0], config.IMAGE_SHAPE[1])
+dataset_train = AICityDataset()
+dataset_train.get_Images(framePath=video_path, length=video_length, isTrain=True, trainSplit=0.25, method=method, height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
 dataset_train.prepare()
+dataset_val = AICityDataset()
+dataset_val.get_Images(framePath=video_path, length=video_length, isTrain=False, trainSplit=0.25, method=method, height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
+dataset_val.prepare()
 
 # Validation dataset
-dataset_val = SD.ShapesDataset()
+"""dataset_val = SD.ShapesDataset()
 dataset_val.load_shapes(50, config.IMAGE_SHAPE[0], config.IMAGE_SHAPE[1])
 dataset_val.prepare()
 image_ids = np.random.choice(dataset_train.image_ids, 4)
 for image_id in image_ids:
     image = dataset_train.load_image(image_id)
     mask, class_ids = dataset_train.load_mask(image_id)
-    visualize.display_top_masks(image, mask, class_ids, dataset_train.class_names)
+    visualize.display_top_masks(image, mask, class_ids, dataset_train.class_names)"""
 
 # for i in tqdm(range(video_second_part.shape[0])):
 # Create model in training mode
@@ -102,10 +106,10 @@ elif init_with == "last":
 # which layers to train by name pattern.
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
-            epochs=1,
+            epochs=10,
             layers='heads')
 #
-print (dataset_train)
+#print (dataset_train)
 # Fine tune all layers
 # Passing layers="all" trains all layers. You can also
 # pass a regular expression to select which layers to
@@ -130,10 +134,10 @@ print("Loading weights from ", model_path)
 model.load_weights(model_path, by_name=True)
 
 # Test on a random image
-image_id = random.choice(dataset_val.image_ids)
+image_id_predict = random.choice(dataset_val.image_ids)
 original_image, image_meta, gt_class_id, gt_bbox, gt_mask =\
     modellib.load_image_gt(dataset_val, inference_config,
-                           image_id, use_mini_mask=False)
+                           image_id_predict, use_mini_mask=False)
 
 log("original_image", original_image)
 log("image_meta", image_meta)
@@ -141,14 +145,23 @@ log("gt_class_id", gt_class_id)
 log("gt_bbox", gt_bbox)
 log("gt_mask", gt_mask)
 
-visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id,
+if showImages is True:
+    visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id,
                             dataset_train.class_names, figsize=(8, 8))
+else:
+    utw3.save_instances(original_image, gt_bbox, gt_mask, gt_class_id,
+                                dataset_train.class_names, figsize=(8, 8), imName='gt_' + str(image_id_predict) + '_' + method + '.png')
+
 
 results = model.detect([original_image], verbose=1)
 
 r = results[0]
-visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'],
+if showImages is True:
+    visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'],
                             dataset_val.class_names, r['scores'], ax=get_ax())
+else:
+    utw3.save_instances(original_image, r['rois'], r['masks'], r['class_ids'],
+                            dataset_val.class_names, r['scores'], ax=get_ax(), imName='pred_' + str(image_id_predict) + '_' + method + '.png')
 '''We can see that with just 3 epochs of training we obtain decent results.
 
 Evaluation
@@ -157,21 +170,51 @@ We will calculate our mean Average Precissio (mAP) with Intersection over Union 
 
 # Compute VOC-Style mAP @ IoU=0.5
 # Running on 10 images. Increase for better accuracy.
-# image_ids = np.random.choice(dataset_val.image_ids, 10)
-# APs = []
-# for image_id in image_ids:
-#     # Load image and ground truth data
-#     image, image_meta, gt_class_id, gt_bbox, gt_mask = \
-#         modellib.load_image_gt(dataset_val, inference_config,
-#                                image_id, use_mini_mask=False)
-#     molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
-#     # Run object detection
-#     results = model.detect([image], verbose=0)
-#     r = results[0]
-#     # Compute AP
-#     AP, precisions, recalls, overlaps = \
-#         utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
-#                          r["rois"], r["class_ids"], r["scores"], r['masks'])
-#     APs.append(AP)
-#
-# print("mAP: ", np.mean(APs))
+#image_ids = np.random.choice(dataset_val.image_ids, 100)
+APs = []
+print("Evaluating fine-tuned model")
+resultsPkl = []
+for image_id in tqdm(dataset_val.image_ids):
+    #Load image and ground truth data
+    image, image_meta, gt_class_id, gt_bbox, gt_mask = \
+        modellib.load_image_gt(dataset_val, inference_config,
+                               image_id, use_mini_mask=False)
+    molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
+    #Run object detection
+    results = model.detect([image], verbose=0)
+    resultsPkl.append(results)
+    r = results[0]
+    #Compute AP
+    AP, precisions, recalls, overlaps = \
+        utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
+                         r["rois"], r["class_ids"], r["scores"], r['masks'])
+    APs.append(AP)
+
+print("Saving results to pickle")
+
+detections = []
+for i, result in tqdm(enumerate(resultsPkl), total=len(resultsPkl)):
+    r = result[0]
+    class_id = r['class_ids']
+    # print (class_id)
+    boxes = r['rois']
+    confidence = r['scores']
+    for j in range(class_id.shape[0]):
+        if class_id[j] == 1:
+            bbox = boxes[j, :]
+            detection = {}
+            box_h = bbox[2] - bbox[0]
+            box_w = bbox[3] - bbox[1]
+            detection['frame'] = dataset_val.image_info[i]['id']
+            detection['left'] = bbox[1]
+            detection['top'] = bbox[0]
+            detection['width'] = box_w
+            detection['height'] = box_h
+            detection['confidence'] = confidence[j]
+            detections.append(detection)
+
+with open('results_t12_' + method + '.pkl', "wb") as f:
+    pickle.dump(detections, f)
+
+print("mAP: ", np.mean(APs))
+print("Images with GT and predictions in gt_" + str(image_id_predict) + "_" + method + ".png and pred_" + str(image_id_predict) + "_" + method + ".png")
