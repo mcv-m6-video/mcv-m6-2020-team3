@@ -535,8 +535,8 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
     #print("precision:{}".format(precision))
     #print("recall:{}".format(recall))
     mAP = sum(precision_step)/11
-    #if verbose:
-    print("mAP: {}".format(mAP))
+    if verbose:
+        print("mAP: {}".format(mAP))
 
     #return precision, recall, precision_step, F1_score, mAP
     return mAP
