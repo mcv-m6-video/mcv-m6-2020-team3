@@ -353,20 +353,21 @@ def addBboxesToFrames(framesPath, detections, groundTruth, name, firstFrame=0, l
     videoFrames = []
 
     prevFrame = 0
-    frameMat = cv2.imread(frameFiles[0])
+    frameMat = cv2.imread(frameFiles[firstFrame])
     for item in tqdm(combinedList):
         frame = item['frame'] - 1
         if frame >= firstFrame:
             if frame != prevFrame:
-                frameMat = cv2.resize(frameMat, (1920//2, 1080//2))
+                frameMat = cv2.resize(frameMat, (1920//4, 1080//4))
                 videoFrames.append(frameMat)
                 if frame > lastFrame:
                     break
                 frameMat = cv2.imread(frameFiles[frame])
             startPoint = (int(item['left']), int(item['top']))
             endPoint = (int(startPoint[0] + item['width']), int(startPoint[1] + item['height']))
-            color = (255, 0, 0) if item['isGT'] is True else (0, 0, 255)
-            frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, 2)
+            thickness = 2 #4 if item['isGT'] is True else 2
+            color = (255, 255, 0) if item['isGT'] is True else (255, 0, 0)
+            frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, thickness)
             prevFrame = frame
     imageio.mimsave(name + '.gif', videoFrames, fps=10)
 def getDetectionsPerFrame(detections):
