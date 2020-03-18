@@ -334,7 +334,7 @@ def getBboxFromDetection(detection):
     bbox[2] = detection['left'] + detection['width']
     bbox[3] = detection['left'] + detection['height']
     return bbox
-def addBboxesToFrames(framesPath, detections, groundTruth, name):
+def addBboxesToFrames(framesPath, detections, groundTruth, name, video_length=None):
     #Show GT bboxes and detections
     #Preprocess detections and GT
     for detection in detections:
@@ -347,23 +347,27 @@ def addBboxesToFrames(framesPath, detections, groundTruth, name):
     combinedList = sortDetectionsByKey(combinedList, 'frame')
 
     frameFiles = glob.glob(framesPath + '/*.jpg')
+    frameFiles = sorted(frameFiles)
     size = (1920, 1080)
     fps = 10
-    out = cv2.VideoWriter(name + '.avi',cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
+    videoFrames = []
 
     prevFrame = 0
     frameMat = cv2.imread(frameFiles[0])
     for item in tqdm(combinedList):
         frame = item['frame'] - 1
         if frame != prevFrame:
-            out.write(frameMat)
+            frameMat = cv2.resize(frameMat, (1920//4, 1080//4))
+            videoFrames.append(frameMat)
+            if video_length is not None and frame > video_length:
+                break
             frameMat = cv2.imread(frameFiles[frame])
         startPoint = (int(item['left']), int(item['top']))
         endPoint = (int(startPoint[0] + item['width']), int(startPoint[1] + item['height']))
         color = (255, 0, 0) if item['isGT'] is True else (0, 0, 255)
         frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, 2)
         prevFrame = frame
-    out.release()
+    imageio.mimsave(name + '.gif', videoFrames, fps=10)
 def getDetectionsPerFrame(detections):
     detectionDict = {}
     for detection in detections:
@@ -779,3 +783,11 @@ def save_instances(image, boxes, masks, class_ids, class_names,
             ax.add_patch(p)
         ax.imshow(masked_image.astype(np.uint8))
         plt.savefig(imName)
+
+def upscaleDetections(detections):
+    for detection in detections:
+        detection['height'] = int(detection['height'] * 1080 / float(512))
+        detection['width'] = int(detection['width'] * 1920 / float(512))
+        detection['left'] = int(detection['left'] * 1920 / float(512))
+        detection['top'] = int(detection['top'] * 1080 / float(512))
+    return detections

@@ -4,7 +4,7 @@ example
 Note, frame starts from 1.
 """
 import pickle
-from utils_w3 import addBboxesToFrames, calculate_mAP, bb_iou
+from utils_w3 import addBboxesToFrames, calculate_mAP, bb_iou, upscaleDetections
 from utils_tracking import read_tracking_annotations, compute_mAP_track, addTracksToFrames, addTracksToFrames_gif
 from tqdm import tqdm
 from track import Track
@@ -68,7 +68,7 @@ def find_tracking(detections_all, video_length, missing_chance = 5):
 if __name__ == "__main__":
     # detections_filename = "./detections/detections.pkl"
     detections_filename = "./detections/results_t12.pkl"
-    video_length = 2141
+    video_length = 100
     video_path = "./Datasets/AICity/frames/"
     groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
 
@@ -76,6 +76,8 @@ if __name__ == "__main__":
     with open(detections_filename, 'rb') as p:
         detections = pickle.load(p)
         p.close()
+
+    detections = upscaleDetections(detections)
 
     print("Reading annotations...")
     read_annotations_flag = False
@@ -93,10 +95,11 @@ if __name__ == "__main__":
             p.close()
 
     print("calculate mAP...")
-    mAP = calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=True, verbose=True)
-    print("mAP = ", mAP)
+    #mAP = calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=True, verbose=True)
+    #print("mAP = ", mAP)
 
-    addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth, "test")
+    addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth, "test", video_length=100)
+    exit()
 
     detections_tracks = find_tracking(detections, video_length, missing_chance=1)
     mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
