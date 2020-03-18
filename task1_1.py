@@ -20,6 +20,7 @@ from mrcnn.config import Config
 from mrcnn.visualize import display_images
 import mrcnn.model as modellib
 from mrcnn.model import log
+from utils_tracking import read_tracking_annotations
 
 
 #%matplotlib inline
@@ -99,51 +100,49 @@ model.load_weights(weights_path, by_name=True)
 '''
 Test the network with different images taken from our dataset. Take into account that the network can only predict classes from COCO.
 '''
-video_length = 200
-# video_length = 2141
-# video_length = 100
-video_split_ratio = 0.25
-# video_path = "./Datasets/AICity_data/train/S03/c010/vdo.avi"
+video_length = 2141
+video_split_ratio = 1
 video_path = "./Datasets/AICity/frames/"
 groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
-# groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
 roi_path = 'Datasets/AICity_data/train/S03/c010/roi.jpg'
-# roi = cv2.cvtColor(cv2.imread(roi_path))
-ver = True
+ver = False
 print("Reading annotations...")
-groundTruth = utw3.read_annotations(groundtruth_xml_path, video_length)
-gt_filtered = [x for x in groundTruth if x['frame'] > int(video_length * video_split_ratio)]
+detections = []
+frame_id = 0
+for i in tqdm(range(video_length)):
+    frame_id = frame_id + 1
 
-video_first_part, video_second_part, divide_frame = \
-    read_video_and_divide(video_path, video_length=video_length, video_split_ratio=video_split_ratio)
-# for i in tqdm(range(video_second_part.shape[0])):
-for i in tqdm(range(video_first_part.shape[0])):
-    image = video_second_part[i, :, :]
-
-    # image = skimage.io.imread("C:/Users/gaby1/Pictures/source_1.jpg")
-
+    filename = "{}{}.jpg".format(video_path, str(i + 1).zfill(5))
+    image = cv2.imread(filename)
     # Run detection
-    results = model.detect([image], verbose=1)
-    print('restuts:                            ')
-    print(results)
-
-    # Visualize results
+    results = model.detect([image], verbose=0)
     r = results[0]
-    print('results[0]')
-    print(r)
-    print("r['rois']:  ")
-    print(r['rois'])
-    print("r['masks']:  ")
-    print(r['masks'])
-    print("r['class_ids']:")
-    print(r['class_ids'])
-    print("class_names: ")
-    print(class_names)
-    print("r['scores']:   ")
-    print(r['scores'])
+    class_id = r['class_ids']
+    # print (class_id)
+    boxes = r['rois']
+    confidence = r['scores']
+    mask = r['masks']
+
+    for j in range(class_id.shape[0]):
+        if class_id[j] == 3:
+            bbox = boxes[j, :]
+            #mask = mask[j, :]
+            detection = {}
+            box_h = bbox[2] - bbox[0]
+            box_w = bbox[3] - bbox[1]
+            detection['frame'] = frame_id
+            detection['left'] = bbox[1]
+            detection['top'] = bbox[0]
+            detection['width'] = box_w
+            detection['height'] = box_h
+            detection['confidence'] = confidence[j]
+            detections.append(detection)
     if ver:
-        visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
-                                    class_names, r['scores'])
+        visualize.display_instances(image, boxes, mask, class_id,
+                                    class_names, confidence)
+groundTruth, tracks_gt_list = read_tracking_annotations(groundtruth_xml_path, video_length)
+mAP = utw3.calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=True, verbose=True)
+
 
     # '''Stage 1: Region Proposal Network
     # The Region Proposal Network (RPN) runs a lightweight binary classifier on a lot of boxes (anchors) over the image and returns object/no-object scores. Anchors with high objectness score (positive anchors) are passed to the stage two to be classified.
