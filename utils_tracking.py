@@ -3,6 +3,9 @@ from track import Track
 from tqdm import tqdm
 import numpy as np
 from utils_w3 import calculate_mAP
+import glob
+import cv2
+import imageio
 
 
 def detection_is_dictionary(frame_id, left, top, width, height, confidence = 1.0):
@@ -70,6 +73,9 @@ def read_tracking_annotations(annotation_path, video_length):
 def compute_mAP_track(groundtruth_tracks, detections_tracks, IoU_threshold=0.5, verbose = False):
     """
     Calculate the mean of the best mAP for each track of the ground truth
+    input:
+    groundtruth_tracks: tracks of gt, the format should be list of Class Track
+    detections_tracks: tracks of detections, the format should be list of Class Track
     """
 
     mAP_list = list()
@@ -97,4 +103,85 @@ def compute_mAP_track(groundtruth_tracks, detections_tracks, IoU_threshold=0.5, 
         print("mAP = {}".format(mAP_mean))
 
     return mAP_mean
+
+
+def center_of_detection(detection):
+    return (int(detection['left'] + 0.5 * detection['width']), int(detection['top'] + 0.5 * detection['height']))
+
+
+def write_one_frame(detections_tracks, frame_id, frameMat, color):
+    """
+    tool for addTracksToFrames
+    :param detections_tracks: this can be detections or ground truth
+    :param frame_id: which frame
+    :param frameMat: frame picture
+    :param color: rectangle and line color
+    :return: frameMat
+    """
+    for track_one in detections_tracks:
+        index = 0
+        flag_shoot = False
+        for index, detection in enumerate(track_one.detections):
+            # write the rectangle
+            if detection['frame'] == frame_id:
+                startPoint = (int(detection['left']), int(detection['top']))
+                endPoint = (int(startPoint[0] + detection['width']), int(startPoint[1] + detection['height']))
+                frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, 2)
+                flag_shoot = True
+                break
+        if flag_shoot:
+            shoot_index = index
+            # write the line
+            for index in range(shoot_index - 1):
+                startPoint = center_of_detection(track_one.detections[index])
+                endPoint = center_of_detection(track_one.detections[index + 1])
+                frameMat = cv2.line(frameMat, startPoint, endPoint, color, 2)
+    return frameMat
+
+
+def addTracksToFrames(framesPath, detections_tracks, tracks_gt_list, start_frame = 1, end_frame = 2141, name = "test"):
+    """
+    write the video of the tracking result
+    :param framesPath: path of frames
+    :param detections_tracks: detections in list of Track. Detections in Track should be sorted.
+    :param tracks_gt_list: ground truth in list of Track. Detections in Track should be sorted.
+    :param name: name of video.
+    :return: None
+    """
+    size = (1920, 1080)
+    fps = 10
+    out = cv2.VideoWriter(name + '.avi', cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
+
+    for frame_id in tqdm(range(start_frame, end_frame)):
+        filename = "{}{}.jpg".format(framesPath, str(frame_id).zfill(5))
+        frameMat = cv2.imread(filename)
+        color_detection = (0, 0, 255)
+        write_one_frame(detections_tracks, frame_id, frameMat, color_detection)
+        color_gt = (255, 0, 0)
+        write_one_frame(tracks_gt_list, frame_id, frameMat, color_gt)
+        out.write(frameMat)
+    out.release()
+
+
+def addTracksToFrames_gif(framesPath, detections_tracks, tracks_gt_list, start_frame = 1, end_frame = 10, name = "test"):
+    """
+    write the gif of the tracking result
+    :param framesPath: path of frames
+    :param detections_tracks: detections in list of Track. Detections in Track should be sorted.
+    :param tracks_gt_list: ground truth in list of Track. Detections in Track should be sorted.
+    :param name: name of video.
+    :return: None
+    """
+    images = []
+
+    for frame_id in tqdm(range(start_frame, end_frame)):
+        filename = "{}{}.jpg".format(framesPath, str(frame_id).zfill(5))
+        frameMat = cv2.imread(filename)
+        color_detection = (0, 0, 255)
+        write_one_frame(detections_tracks, frame_id, frameMat, color_detection)
+        color_gt = (255, 0, 0)
+        write_one_frame(tracks_gt_list, frame_id, frameMat, color_gt)
+        resized = cv2.resize(frameMat, (480, 270), interpolation=cv2.INTER_AREA)
+        images.append(resized)
+    imageio.mimsave(name + '.gif', images)
 

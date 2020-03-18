@@ -10,6 +10,7 @@ Datasets/
 
 *.avi
 *.gif
-*.pkl
 
 Mask_RCNN
+
+*.pkl
