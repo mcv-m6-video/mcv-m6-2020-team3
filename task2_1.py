@@ -99,7 +99,6 @@ if __name__ == "__main__":
     #print("mAP = ", mAP)
 
     addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth, "test", firstFrame=800, lastFrame=930)
-    exit()
 
     detections_tracks = find_tracking(detections, video_length, missing_chance=1)
     mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
