@@ -6,6 +6,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import skimage
 import cv2
+import pickle
 import utils_w3 as utw3
 from utils_Gaussian import read_video_and_divide, calculate_mean_std_first_part_video, calculate_mask, find_detections
 from tqdm import tqdm
@@ -59,13 +60,14 @@ roi_path = 'Datasets/AICity_data/train/S03/c010/roi.jpg'
 showImages = False
 
 config = AICityConfig()
+method = 'first'
 config.display()
 # Training dataset
 dataset_train = AICityDataset()
-dataset_train.get_Images(framePath=video_path, length=video_length, isTrain=True, trainSplit=0.25, method="first", height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
+dataset_train.get_Images(framePath=video_path, length=video_length, isTrain=True, trainSplit=0.25, method=method, height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
 dataset_train.prepare()
 dataset_val = AICityDataset()
-dataset_val.get_Images(framePath=video_path, length=video_length, isTrain=False, trainSplit=0.25, method="first", height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
+dataset_val.get_Images(framePath=video_path, length=video_length, isTrain=False, trainSplit=0.25, method=method, height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
 dataset_val.prepare()
 
 # Validation dataset
@@ -104,7 +106,7 @@ elif init_with == "last":
 # which layers to train by name pattern.
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
-            epochs=1,
+            epochs=10,
             layers='heads')
 #
 #print (dataset_train)
@@ -132,10 +134,10 @@ print("Loading weights from ", model_path)
 model.load_weights(model_path, by_name=True)
 
 # Test on a random image
-image_id = random.choice(dataset_val.image_ids)
+image_id_predict = random.choice(dataset_val.image_ids)
 original_image, image_meta, gt_class_id, gt_bbox, gt_mask =\
     modellib.load_image_gt(dataset_val, inference_config,
-                           image_id, use_mini_mask=False)
+                           image_id_predict, use_mini_mask=False)
 
 log("original_image", original_image)
 log("image_meta", image_meta)
@@ -148,7 +150,7 @@ if showImages is True:
                             dataset_train.class_names, figsize=(8, 8))
 else:
     utw3.save_instances(original_image, gt_bbox, gt_mask, gt_class_id,
-                                dataset_train.class_names, figsize=(8, 8), imName='gt_' + str(image_id) + '.png')
+                                dataset_train.class_names, figsize=(8, 8), imName='gt_' + str(image_id_predict) + '_' + method + '.png')
 
 
 results = model.detect([original_image], verbose=1)
@@ -159,7 +161,7 @@ if showImages is True:
                             dataset_val.class_names, r['scores'], ax=get_ax())
 else:
     utw3.save_instances(original_image, r['rois'], r['masks'], r['class_ids'],
-                            dataset_val.class_names, r['scores'], ax=get_ax(), imName="pred_" + str(image_id) + '.png')
+                            dataset_val.class_names, r['scores'], ax=get_ax(), imName='pred_' + str(image_id_predict) + '_' + method + '.png')
 '''We can see that with just 3 epochs of training we obtain decent results.
 
 Evaluation
@@ -170,7 +172,9 @@ We will calculate our mean Average Precissio (mAP) with Intersection over Union 
 # Running on 10 images. Increase for better accuracy.
 #image_ids = np.random.choice(dataset_val.image_ids, 100)
 APs = []
-for image_id in dataset_val.image_ids:
+print("Evaluating fine-tuned model")
+resultsPkl = []
+for image_id in tqdm(dataset_val.image_ids):
     #Load image and ground truth data
     image, image_meta, gt_class_id, gt_bbox, gt_mask = \
         modellib.load_image_gt(dataset_val, inference_config,
@@ -178,6 +182,7 @@ for image_id in dataset_val.image_ids:
     molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
     #Run object detection
     results = model.detect([image], verbose=0)
+    resultsPkl.append(results)
     r = results[0]
     #Compute AP
     AP, precisions, recalls, overlaps = \
@@ -185,4 +190,31 @@ for image_id in dataset_val.image_ids:
                          r["rois"], r["class_ids"], r["scores"], r['masks'])
     APs.append(AP)
 
+print("Saving results to pickle")
+
+detections = []
+for i, result in tqdm(enumerate(resultsPkl)):
+    r = result[0]
+    class_id = r['class_ids']
+    # print (class_id)
+    boxes = r['rois']
+    confidence = r['scores']
+    for j in range(class_id.shape[0]):
+        if class_id[j] == 1:
+            bbox = boxes[j, :]
+            detection = {}
+            box_h = bbox[2] - bbox[0]
+            box_w = bbox[3] - bbox[1]
+            detection['frame'] = dataset_val.image_info[i]['id']
+            detection['left'] = bbox[1]
+            detection['top'] = bbox[0]
+            detection['width'] = box_w
+            detection['height'] = box_h
+            detection['confidence'] = confidence[j]
+            detections.append(detection)
+
+with open('results_t12.pkl', "wb") as f:
+    pickle.dump(detections, f)
+
 print("mAP: ", np.mean(APs))
+print("Images with GT and predictions in gt_" + str(image_id_predict) + "_" + method + ".png and pred_" + str(image_id_predict) + "_" + method + ".png")

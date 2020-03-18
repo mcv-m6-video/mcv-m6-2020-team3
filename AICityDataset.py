@@ -30,10 +30,19 @@ class AICityDataset(utils.Dataset):
         framePaths = glob.glob(framePath + '/*.jpg')
         framePaths = sorted(framePaths)
         framePaths = framePaths[0:length] if length is not None else framePaths
-        splitPoint = int(length*trainSplit)
-        datasetFrames = framePaths[0:splitPoint] if isTrain is True else framePaths[splitPoint:]
         frameIds = list(range(length))
-        frameIds = frameIds[0:splitPoint] if isTrain is True else frameIds[splitPoint:]
+        if method == "first":
+            splitPoint = int(length*trainSplit)
+            datasetFrames = framePaths[0:splitPoint] if isTrain is True else framePaths[splitPoint:]
+            frameIds = frameIds[0:splitPoint] if isTrain is True else frameIds[splitPoint:]
+        elif method == "random":
+            framesTrain, framesTest, idsTrain, idsTest = train_test_split(framePaths, frameIds, train_size=trainSplit)
+            if isTrain is True:
+                datasetFrames = framesTrain
+                frameIds = idsTrain
+            else:
+                datasetFrames = framesTest
+                frameIds = idsTest
         for id, frame in zip(frameIds, datasetFrames):
             self.add_image("AICity", image_id=id, path=frame, width=width, height=height)
     
@@ -43,7 +52,7 @@ class AICityDataset(utils.Dataset):
 
     def load_mask(self, image_id):
         info = self.image_info[image_id]
-        detections = self.groundTruth[image_id]
+        detections = self.groundTruth[info['id']]
         nDetections = len(detections)
         cls_ids = np.zeros(nDetections)
         mask = np.zeros([info['height'], info['width'], nDetections], dtype=np.uint8)
