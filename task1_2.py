@@ -60,7 +60,7 @@ roi_path = 'Datasets/AICity_data/train/S03/c010/roi.jpg'
 showImages = False
 
 config = AICityConfig()
-method = 'first'
+method = 'interleaved'
 config.display()
 # Training dataset
 dataset_train = AICityDataset()

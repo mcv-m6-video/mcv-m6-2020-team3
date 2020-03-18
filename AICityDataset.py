@@ -43,6 +43,21 @@ class AICityDataset(utils.Dataset):
             else:
                 datasetFrames = framesTest
                 frameIds = idsTest
+        elif method == "interleaved":
+            #Hardcoded 25%
+            tmpIds = []
+            datasetFrames = []
+            for frame, id in zip(framePaths, frameIds):
+                modulo = id % 4
+                if isTrain is True:
+                    if modulo == 0:
+                        tmpIds.append(id)
+                        datasetFrames.append(frame)    
+                else:
+                    if modulo > 0:
+                        tmpIds.append(id)
+                        datasetFrames.append(frame)       
+            frameIds = tmpIds            
         for id, frame in zip(frameIds, datasetFrames):
             self.add_image("AICity", image_id=id, path=frame, width=width, height=height)
     
