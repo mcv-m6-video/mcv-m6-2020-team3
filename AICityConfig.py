@@ -1,4 +1,5 @@
 import os
+import sys
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("./Mask_RCNN")
@@ -18,7 +19,7 @@ class AICityConfig(Config):
     IMAGES_PER_GPU = 8
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 # Car
+    NUM_CLASSES = 1 + 1 # Car + bg
 
     # Use small images for faster training. Set the limits of the small side
     # the large side, and that determines the image shape.

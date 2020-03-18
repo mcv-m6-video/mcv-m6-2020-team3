@@ -1,4 +1,5 @@
 import os
+import sys
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("./Mask_RCNN")
@@ -25,7 +26,7 @@ class AICityDataset(utils.Dataset):
             currFrame = elem['frame'] 
             groupedGT[currFrame].append(elem)
         self.groundTruth = groupedGT
-        self.add_class("AICity", 0, "Car")
+        self.add_class("AICity", 1, "Car")
         framePaths = glob.glob(framePath + '/*.jpg')
         framePaths = sorted(framePaths)
         framePaths = framePaths[0:length] if length is not None else framePaths
@@ -49,7 +50,7 @@ class AICityDataset(utils.Dataset):
 
         for i, detection in enumerate(detections):
             #All detections are cars
-            cls_ids[i] = 0
+            cls_ids[i] = 1
             y1 = detection['top']
             x1 = detection['left']
             y2 = detection['top'] + detection['height']
