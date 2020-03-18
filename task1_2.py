@@ -193,7 +193,7 @@ for image_id in tqdm(dataset_val.image_ids):
 print("Saving results to pickle")
 
 detections = []
-for i, result in tqdm(enumerate(resultsPkl)):
+for i, result in tqdm(enumerate(resultsPkl), total=len(resultsPkl)):
     r = result[0]
     class_id = r['class_ids']
     # print (class_id)
@@ -213,7 +213,7 @@ for i, result in tqdm(enumerate(resultsPkl)):
             detection['confidence'] = confidence[j]
             detections.append(detection)
 
-with open('results_t12.pkl', "wb") as f:
+with open('results_t12_' + method + '.pkl', "wb") as f:
     pickle.dump(detections, f)
 
 print("mAP: ", np.mean(APs))
