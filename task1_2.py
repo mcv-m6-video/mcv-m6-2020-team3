@@ -59,8 +59,8 @@ dataset_train = AICityDataset()
 dataset_train.get_Images(framePath=video_path, length=video_length, isTrain=True, trainSplit=0.25, method="first", height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
 dataset_train.prepare()
 dataset_val = AICityDataset()
-dataset_train.get_Images(framePath=video_path, length=video_length, isTrain=False, trainSplit=0.25, method="first", height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
-dataset_train.prepare()
+dataset_val.get_Images(framePath=video_path, length=video_length, isTrain=False, trainSplit=0.25, method="first", height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
+dataset_val.prepare()
 
 # Validation dataset
 """dataset_val = SD.ShapesDataset()
@@ -98,7 +98,7 @@ elif init_with == "last":
 # which layers to train by name pattern.
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
-            epochs=10,
+            epochs=20,
             layers='heads')
 #
 #print (dataset_train)
