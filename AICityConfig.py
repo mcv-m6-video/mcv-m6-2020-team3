@@ -1,3 +1,11 @@
+import os
+
+# Root directory of the project
+ROOT_DIR = os.path.abspath("./Mask_RCNN")
+
+# Import Mask RCNN
+sys.path.append(ROOT_DIR)  # To find local version of the library
+
 from mrcnn.config import Config
 
 class AICityConfig(Config):
@@ -14,7 +22,7 @@ class AICityConfig(Config):
 
     # Use small images for faster training. Set the limits of the small side
     # the large side, and that determines the image shape.
-    IMAGE_MIN_DIM = 128
+    IMAGE_MIN_DIM = 512
     IMAGE_MAX_DIM = 512
 
     # Use smaller anchors because our image and objects are small
