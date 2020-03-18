@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as ET
 from track import Track
 from tqdm import tqdm
+import numpy as np
+from utils_w3 import calculate_mAP
 
 
 def detection_is_dictionary(frame_id, left, top, width, height, confidence = 1.0):
@@ -63,4 +65,36 @@ def read_tracking_annotations(annotation_path, video_length):
 
     # print(ground_truths)
     return ground_truths, tracks
+
+
+def compute_mAP_track(groundtruth_tracks, detections_tracks, IoU_threshold=0.5, verbose = False):
+    """
+    Calculate the mean of the best mAP for each track of the ground truth
+    """
+
+    mAP_list = list()
+
+    for groundtruth_track in tqdm(groundtruth_tracks):
+        #print('DETECTION'), print(detection_track)
+        max_mAP = 0
+
+        for detection_track in detections_tracks:
+            #print(groundtruth_track)
+            mAP = calculate_mAP(groundtruth_track.detections, detection_track.detections,
+                                          IoU_threshold)
+            #print(mAP)
+            if(max_mAP < mAP):
+                max_mAP = mAP
+
+        mAP_list.append(max_mAP)
+
+    np_mAP_list = np.asarray(mAP_list)
+
+    mAP_mean = np.mean(np_mAP_list)
+    if verbose:
+        print("np_mAP_list:")
+        print(np_mAP_list)
+        print("mAP = {}".format(mAP_mean))
+
+    return mAP_mean
 
