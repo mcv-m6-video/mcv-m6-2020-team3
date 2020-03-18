@@ -11,5 +11,6 @@ Datasets/
 *.avi
 *.gif
 
+Mask_RCNN
 
 *.pkl
