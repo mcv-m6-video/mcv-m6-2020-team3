@@ -334,7 +334,7 @@ def getBboxFromDetection(detection):
     bbox[2] = detection['left'] + detection['width']
     bbox[3] = detection['left'] + detection['height']
     return bbox
-def addBboxesToFrames(framesPath, detections, groundTruth, name, video_length=None):
+def addBboxesToFrames(framesPath, detections, groundTruth, name, firstFrame=0, lastFrame=100):
     #Show GT bboxes and detections
     #Preprocess detections and GT
     for detection in detections:
@@ -356,17 +356,18 @@ def addBboxesToFrames(framesPath, detections, groundTruth, name, video_length=No
     frameMat = cv2.imread(frameFiles[0])
     for item in tqdm(combinedList):
         frame = item['frame'] - 1
-        if frame != prevFrame:
-            frameMat = cv2.resize(frameMat, (1920//4, 1080//4))
-            videoFrames.append(frameMat)
-            if video_length is not None and frame > video_length:
-                break
-            frameMat = cv2.imread(frameFiles[frame])
-        startPoint = (int(item['left']), int(item['top']))
-        endPoint = (int(startPoint[0] + item['width']), int(startPoint[1] + item['height']))
-        color = (255, 0, 0) if item['isGT'] is True else (0, 0, 255)
-        frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, 2)
-        prevFrame = frame
+        if frame >= firstFrame:
+            if frame != prevFrame:
+                frameMat = cv2.resize(frameMat, (1920//2, 1080//2))
+                videoFrames.append(frameMat)
+                if frame > lastFrame:
+                    break
+                frameMat = cv2.imread(frameFiles[frame])
+            startPoint = (int(item['left']), int(item['top']))
+            endPoint = (int(startPoint[0] + item['width']), int(startPoint[1] + item['height']))
+            color = (255, 0, 0) if item['isGT'] is True else (0, 0, 255)
+            frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, 2)
+            prevFrame = frame
     imageio.mimsave(name + '.gif', videoFrames, fps=10)
 def getDetectionsPerFrame(detections):
     detectionDict = {}
