@@ -57,9 +57,6 @@ video_path = "./Datasets/AICity/frames"
 groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
 roi_path = 'Datasets/AICity_data/train/S03/c010/roi.jpg'
 showImages = False
-print("Reading annotations...")
-#groundTruth = utw3.read_annotations(groundtruth_xml_path, video_length)
-#gt_filtered = [x for x in groundTruth if x['frame'] > int(video_length * video_split_ratio)]
 
 config = AICityConfig()
 config.display()
