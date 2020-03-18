@@ -4,7 +4,7 @@ example
 Note, frame starts from 1.
 """
 import pickle
-from utils_w3 import addBboxesToFrames, calculate_mAP, bb_iou
+from utils_w3 import addBboxesToFrames, calculate_mAP, bb_iou, addBboxesToFrames_gif
 from utils_tracking import read_tracking_annotations, compute_mAP_track, addTracksToFrames, addTracksToFrames_gif
 from tqdm import tqdm
 from track import Track
@@ -13,7 +13,7 @@ def detection_to_box(detection):
     return [detection['left'], detection['top'], detection['left']+detection['width'],
             detection['top']+detection['height']]
 
-def find_tracking(detections_all, video_length, missing_chance = 5):
+def find_tracking(detections_all, video_length, missing_chance = 1, lou_max_threshold = 0.01):
     tracks_update = []
     chance_left = []
     tracks_end = []
@@ -44,7 +44,7 @@ def find_tracking(detections_all, video_length, missing_chance = 5):
                     if lou > lou_max:
                         lou_max = lou
                         index_max = index
-                if lou_max > 0.01:
+                if lou_max > lou_max_threshold:
                     tracks_update[index_max].detections.append(detection)
                     chance_left[index_max] = missing_chance
                 else:
@@ -67,7 +67,7 @@ def find_tracking(detections_all, video_length, missing_chance = 5):
 
 if __name__ == "__main__":
     # detections_filename = "./detections/detections.pkl"
-    detections_filename = "./detections/results_t12.pkl"
+    detections_filename = "./detections/results_t12_random.pkl"
     video_length = 2141
     video_path = "./Datasets/AICity/frames/"
     groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
@@ -76,6 +76,7 @@ if __name__ == "__main__":
     with open(detections_filename, 'rb') as p:
         detections = pickle.load(p)
         p.close()
+
 
     print("Reading annotations...")
     read_annotations_flag = False
@@ -96,13 +97,34 @@ if __name__ == "__main__":
     mAP = calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=True, verbose=True)
     print("mAP = ", mAP)
 
-    addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth, "test")
+    # addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth, "test")
+    # addBboxesToFrames_gif(video_path, detections, groundTruth, start_frame=0, end_frame=20, name="test")
 
-    detections_tracks = find_tracking(detections, video_length, missing_chance=1)
-    mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
-    print("mAP_track = ", mAP_track)
+    # sort detections because detections is sort by confidence while calculating map.
+    detections.sort(key=lambda x: x['frame'])
 
-    # addTracksToFrames(video_path, detections_tracks, tracks_gt_list, start_frame=1, end_frame=1000, name="test")
+    # detections_tracks = find_tracking(detections, video_length, missing_chance=1, lou_max_threshold=0.01)
+    missing_chance_list = [7]
+    lou_max_threshold_list = [0.5]
+    result_list = []
+    for missing_chance in missing_chance_list:
+        for lou_max_threshold in lou_max_threshold_list:
+            detections_tracks = find_tracking(detections, video_length, missing_chance=missing_chance,
+                                              lou_max_threshold=lou_max_threshold)
+            with open("track_gt_de.pkl", 'wb') as f:
+                pickle.dump([tracks_gt_list, detections_tracks, video_length], f)
+                f.close()
+            mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
+            print("mAP_track = ", mAP_track)
+            result_list.append([missing_chance, lou_max_threshold, mAP_track])
+    print(result_list)
+
+    for track_one in detections_tracks:
+        track_one.detections.sort(key=lambda x: x['frame'])
+
+
+
+    addTracksToFrames(video_path, detections_tracks, tracks_gt_list, start_frame=1, end_frame=1000, name="test")
     addTracksToFrames_gif(video_path, detections_tracks, tracks_gt_list, start_frame=800, end_frame=930, name="test")
 
 

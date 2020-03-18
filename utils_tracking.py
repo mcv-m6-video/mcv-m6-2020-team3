@@ -6,6 +6,8 @@ from utils_w3 import calculate_mAP
 import glob
 import cv2
 import imageio
+import motmetrics as mm
+import pickle
 
 
 def detection_is_dictionary(frame_id, left, top, width, height, confidence = 1.0):
@@ -185,3 +187,44 @@ def addTracksToFrames_gif(framesPath, detections_tracks, tracks_gt_list, start_f
         images.append(resized)
     imageio.mimsave(name + '.gif', images)
 
+
+"""
+
+def find_frame_in_track(tracks, frame_id):
+    for track_one in tracks:
+
+        for index, detection in enumerate(track_one.detections):
+            # write the rectangle
+            if detection['frame'] == frame_id:
+                startPoint = (int(detection['left']), int(detection['top']))
+                endPoint = (int(startPoint[0] + detection['width']), int(startPoint[1] + detection['height']))
+                frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, 2)
+                flag_shoot = True
+                break
+    return frameMat
+
+
+def compute_idf1(groundtruth_tracks, detections_tracks, video_length, IoU_threshold=0.5, verbose = False):
+    acc = mm.MOTAccumulator(auto_id=True)
+
+    for i in range(video_length):
+
+        mm_gt_bboxes = []
+        mm_detec_bboxes = []
+
+        distances_gt_det = mm.distances.iou_matrix(mm_gt_bboxes, mm_detec_bboxes, max_iou=1.)
+        # mm_gt_bboxes, mm_detec_bboxes, max_iou = 1.
+
+
+
+
+
+if __name__ == "__main__":
+    with open("track_gt_de.pkl", 'rb') as p:
+        tracks_gt_list, detections_tracks, video_length = pickle.load(p)
+        p.close()
+
+    compute_idf1(tracks_gt_list, detections_tracks, video_length)
+
+
+"""
