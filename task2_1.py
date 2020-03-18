@@ -66,7 +66,8 @@ def find_tracking(detections_all, video_length, missing_chance = 5):
     return tracks_end
 
 if __name__ == "__main__":
-    detections_filename = "./detections/detections.pkl"
+    # detections_filename = "./detections/detections.pkl"
+    detections_filename = "./detections/results_t12.pkl"
     video_length = 2141
     video_path = "./Datasets/AICity/frames/"
     groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
@@ -91,11 +92,11 @@ if __name__ == "__main__":
             groundTruth, tracks_gt_list = pickle.load(p)
             p.close()
 
-    # print("calculate mAP...")
-    # mAP = calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=True, verbose=True)
-    # print("mAP = ", mAP)
+    print("calculate mAP...")
+    mAP = calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=True, verbose=True)
+    print("mAP = ", mAP)
 
-    # addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth, "test")
+    addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth, "test")
 
     detections_tracks = find_tracking(detections, video_length, missing_chance=1)
     mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
