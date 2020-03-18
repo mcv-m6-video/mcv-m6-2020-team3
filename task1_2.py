@@ -23,6 +23,15 @@ from mrcnn.visualize import display_images
 import mrcnn.model as modellib
 from mrcnn.model import log
 
+def get_ax(rows=1, cols=1, size=16):
+    """Return a Matplotlib Axes array to be used in
+    all visualizations in the notebook. Provide a
+    central point to control graph sizes.
+
+    Adjust the size attribute to control how big to render images
+    """
+    _, ax = plt.subplots(rows, cols, figsize=(size * cols, size * rows))
+    return ax
 
 #%matplotlib inline
 class InferenceConfig(AICityConfig):
@@ -41,16 +50,16 @@ if not os.path.exists(COCO_MODEL_PATH):
 # # Path to Shapes trained weights
 SHAPES_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_shapes.h5")
 
-video_length = 200
-# video_length = 2141
+# video_length = 200
+video_length = 2141
 video_split_ratio = 0.25
 video_path = "./Datasets/AICity/frames"
 groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
 roi_path = 'Datasets/AICity_data/train/S03/c010/roi.jpg'
-ver = False
+showImages = False
 print("Reading annotations...")
-groundTruth = utw3.read_annotations(groundtruth_xml_path, video_length)
-gt_filtered = [x for x in groundTruth if x['frame'] > int(video_length * video_split_ratio)]
+#groundTruth = utw3.read_annotations(groundtruth_xml_path, video_length)
+#gt_filtered = [x for x in groundTruth if x['frame'] > int(video_length * video_split_ratio)]
 
 config = AICityConfig()
 config.display()
@@ -98,7 +107,7 @@ elif init_with == "last":
 # which layers to train by name pattern.
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
-            epochs=20,
+            epochs=1,
             layers='heads')
 #
 #print (dataset_train)
@@ -137,14 +146,23 @@ log("gt_class_id", gt_class_id)
 log("gt_bbox", gt_bbox)
 log("gt_mask", gt_mask)
 
-"""visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id,
-                            dataset_train.class_names, figsize=(8, 8))"""
+if showImages is True:
+    visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id,
+                            dataset_train.class_names, figsize=(8, 8))
+else:
+    utw3.save_instances(original_image, gt_bbox, gt_mask, gt_class_id,
+                                dataset_train.class_names, figsize=(8, 8), imName='gt_' + str(image_id) + '.png')
+
 
 results = model.detect([original_image], verbose=1)
 
 r = results[0]
-"""visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'],
-                            dataset_val.class_names, r['scores'], ax=get_ax())"""
+if showImages is True:
+    visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'],
+                            dataset_val.class_names, r['scores'], ax=get_ax())
+else:
+    utw3.save_instances(original_image, r['rois'], r['masks'], r['class_ids'],
+                            dataset_val.class_names, r['scores'], ax=get_ax(), imName="pred_" + str(image_id) + '.png')
 '''We can see that with just 3 epochs of training we obtain decent results.
 
 Evaluation
@@ -153,9 +171,9 @@ We will calculate our mean Average Precissio (mAP) with Intersection over Union 
 
 # Compute VOC-Style mAP @ IoU=0.5
 # Running on 10 images. Increase for better accuracy.
-image_ids = np.random.choice(dataset_val.image_ids, 10)
+#image_ids = np.random.choice(dataset_val.image_ids, 100)
 APs = []
-for image_id in image_ids:
+for image_id in dataset_val.image_ids:
     #Load image and ground truth data
     image, image_meta, gt_class_id, gt_bbox, gt_mask = \
         modellib.load_image_gt(dataset_val, inference_config,
