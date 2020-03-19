@@ -66,8 +66,8 @@ def find_tracking(detections_all, video_length, missing_chance = 1, lou_max_thre
     return tracks_end
 
 if __name__ == "__main__":
-    # detections_filename = "./detections/detections.pkl"
-    detections_filename = "./detections/results_t12_random.pkl"
+    detections_filename = "./detections/detections.pkl"
+    # detections_filename = "./detections/results_t12_random.pkl"
     video_length = 2141
     video_path = "./Datasets/AICity/frames/"
     groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         detections = pickle.load(p)
         p.close()
 
-    detections = upscaleDetections(detections)
+    # detections = upscaleDetections(detections)
 
     print("Reading annotations...")
     read_annotations_flag = False
@@ -95,21 +95,23 @@ if __name__ == "__main__":
             p.close()
 
     print("calculate mAP...")
-    #mAP = calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=True, verbose=True)
-    #print("mAP = ", mAP)
+    mAP = calculate_mAP(groundTruth, detections, IoU_threshold=0.5, have_confidence=True, verbose=True)
+    print("mAP = ", mAP)
 
     # addBboxesToFrames('Datasets/AICity/frames', detections, groundTruth, "test")
-    # addBboxesToFrames_gif(video_path, detections, groundTruth, start_frame=0, end_frame=20, name="test")
+    addBboxesToFrames_gif(video_path, detections, groundTruth, start_frame=210, end_frame=260, name="test")
 
     # sort detections because detections is sort by confidence while calculating map.
     detections.sort(key=lambda x: x['frame'])
 
     # detections_tracks = find_tracking(detections, video_length, missing_chance=1, lou_max_threshold=0.01)
-    missing_chance_list = [7]
-    lou_max_threshold_list = [0.5]
+    missing_chance_list = [1, 3, 5, 7]
+    lou_max_threshold_list = [0.01, 0.1, 0.3, 0.5, 0.7]
     result_list = []
     for missing_chance in missing_chance_list:
         for lou_max_threshold in lou_max_threshold_list:
+            if missing_chance >= 3 and lou_max_threshold >= 0.3:
+                continue
             detections_tracks = find_tracking(detections, video_length, missing_chance=missing_chance,
                                               lou_max_threshold=lou_max_threshold)
             with open("track_gt_de.pkl", 'wb') as f:
@@ -124,8 +126,8 @@ if __name__ == "__main__":
         track_one.detections.sort(key=lambda x: x['frame'])
 
 
-    addTracksToFrames(video_path, detections_tracks, tracks_gt_list, start_frame=1, end_frame=1000, name="test")
-    addTracksToFrames_gif(video_path, detections_tracks, tracks_gt_list, start_frame=800, end_frame=930, name="test")
+    # addTracksToFrames(video_path, detections_tracks, tracks_gt_list, start_frame=1, end_frame=1000, name="test")
+    addTracksToFrames_gif(video_path, detections_tracks, tracks_gt_list, start_frame=210, end_frame=390, name="test")
 
 
 
