@@ -1,6 +1,5 @@
 import numpy as np
 import motmetrics as mm
-from sklearn.metrics.pairwise import pairwise_distances
 
 
 class MOT:
@@ -15,8 +14,6 @@ class MOT:
         gt_bboxes = [o.bbox for o in gt_on_frame]
         
         distances_matrix = mm.distances.iou_matrix(gt_bboxes, detection_bboxes, max_iou=1.)
-
-    distances_matrix = mm.distances.iou_matrix(gt_bboxes, detection_bboxes, max_iou=1.)
 
         self.acc.update([det.id for det in detection_on_frame], [gt.id for gt in gt_on_frame], distances_matrix)
 
