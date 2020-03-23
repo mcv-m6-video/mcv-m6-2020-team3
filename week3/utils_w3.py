@@ -663,7 +663,7 @@ def chage_color_space(frame, space):
         return frame
 
 
-def addBboxesToFrames_gif(framesPath, detections, groundTruth, name, length=None):
+def addBboxesToFrames_gif(framesPath, detections, groundTruth, start_frame, end_frame, name):
     #Show GT bboxes and detections
     #Preprocess detections and GT
     for detection in detections:
@@ -675,21 +675,21 @@ def addBboxesToFrames_gif(framesPath, detections, groundTruth, name, length=None
 
     combinedList = sortDetectionsByKey(combinedList, 'frame')
 
-    frameFiles = glob.glob(framesPath + '/*.jpg')
-
     images = []
     firstFrame = combinedList[0]['frame']
 
     prevFrame = 0
-    frameMat = cv2.imread(frameFiles[0])
+    filename = "{}{}.jpg".format(framesPath, str(start_frame).zfill(5))
+    frameMat = cv2.imread(filename)
     for item in tqdm(combinedList):
-        frame = item['frame'] - 1
+        frame = item['frame']
+        if frame < start_frame or frame > end_frame:
+            continue
         if frame != prevFrame:
             resized = cv2.resize(frameMat, (480, 270), interpolation=cv2.INTER_AREA)
             images.append(resized)
-            frameMat = cv2.imread(frameFiles[frame])
-            if frameCount is not None and frame-firstFrame > length:
-                break
+            filename = "{}{}.jpg".format(framesPath, str(item['frame']).zfill(5))
+            frameMat = cv2.imread(filename)
         startPoint = (int(item['left']), int(item['top']))
         endPoint = (int(startPoint[0] + item['width']), int(startPoint[1] + item['height']))
         color = (255, 0, 0) if item['isGT'] is True else (0, 0, 255)
