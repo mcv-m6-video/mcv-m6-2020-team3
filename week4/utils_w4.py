@@ -15,7 +15,6 @@ from numpy import random
 from skimage.measure import label, regionprops
 import matplotlib.patches as mpatches
 import tensorflow as tf
-# from detection import Detection
 import imageio
 
 import sys
@@ -36,7 +35,6 @@ def getDetections(detectionFilePath):
         detections = [getDictFromDetection(line) for line in f]
     return detections
 
-
 def getDictFromDetection(detectionStr):
     detectionList = detectionStr.split(",")
     detectionDict = {}
@@ -47,7 +45,6 @@ def getDictFromDetection(detectionStr):
     detectionDict['height'] = int(float(detectionList[5]))
     detectionDict['confidence'] = float(detectionList[6])
     return detectionDict
-
 
 def bb_iou(bboxA, bboxB):
     # This implements a function to compute the intersection over union of two bounding boxes, also known as the Jaccard Index.
@@ -78,18 +75,17 @@ def bb_iou(bboxA, bboxB):
     # returns the intersection over union value
     return iou
 
-
 def get_noisy_bboxes(discard_probability_bbox=0.1, noise_range=20):
     """
     The function returns a dictionary with the bounding boxes for each frame where the frame number is the key. It also returns a dictionary
-    that contains noisy annotations to the ground truth data.
+    that contains noisy annotations to the ground truth data. 
     """
     ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-    with open(ROOT_DIR + '/../Datasets/AICity/train/S03/c010/gt/gt.txt') as f:
+    with open(ROOT_DIR+'/../Datasets/AICity/train/S03/c010/gt/gt.txt') as f:
         lines = f.readlines()
-        bboxes = dict()  # stores the ground truth bboxes for each frame in the dict
-        bboxes_noisy = dict()  # stores the noisy annotations to the ground truth data
-        num_of_instances = 0
+        bboxes = dict() # stores the ground truth bboxes for each frame in the dict
+        bboxes_noisy = dict() # stores the noisy annotations to the ground truth data
+        num_of_instances = 0 
         for line in lines:
             num_of_instances += 1
             line = (line.split(','))
@@ -113,7 +109,6 @@ def get_noisy_bboxes(discard_probability_bbox=0.1, noise_range=20):
 
     return bboxes, bboxes_noisy, num_of_instances
 
-
 def read_xml_annotations(annotations_path):
     '''The function reads the xml files and returns the corresponding bboxes for every frame.'''
     files = os.listdir(annotations_path)
@@ -136,7 +131,6 @@ def read_xml_annotations(annotations_path):
             else:
                 bboxes[frame] = [[-1, xtl, ytl, height, width, random()]]
     return bboxes
-
 
 def get_single_frame_results(gt_boxes, pred_boxes, iou_thr):
     """Calculates number of true_pos, false_pos, false_neg from single batch of boxes.
@@ -197,7 +191,6 @@ def get_single_frame_results(gt_boxes, pred_boxes, iou_thr):
 
     return {'true_pos': tp, 'false_pos': fp, 'false_neg': fn}
 
-
 def calc_precision_recall(img_results):
     """Calculates precision and recall from the set of frames in video
     Args:
@@ -210,25 +203,25 @@ def calc_precision_recall(img_results):
     Returns:
         tuple: of floats of (precision, recall)
     """
-    true_pos = 0;
-    false_pos = 0;
-    false_neg = 0
+
+    true_pos = 0; false_pos = 0; false_neg = 0
     for _, res in img_results.items():
         true_pos += res['true_pos']
         false_pos += res['false_pos']
         false_neg += res['false_neg']
 
     try:
-        precision = true_pos / (true_pos + false_pos)
+
+        precision = true_pos/(true_pos + false_pos)
     except ZeroDivisionError:
         precision = 0.0
     try:
-        recall = true_pos / (true_pos + false_neg)
+        recall = true_pos/(true_pos + false_neg)
+
     except ZeroDivisionError:
         recall = 0.0
 
     return (precision, recall)
-
 
 def get_model_scores_map(pred_boxes):
     """Creates a dictionary of from model_scores to frame ids.
@@ -245,7 +238,6 @@ def get_model_scores_map(pred_boxes):
             else:
                 model_scores_map[score].append(img_id)
     return model_scores_map
-
 
 def get_avg_precision_at_iou(gt_boxes, pred_boxes, iou_thr=0.5):
     """Calculates average precision at given IoU threshold.
@@ -328,12 +320,12 @@ def get_avg_precision_at_iou(gt_boxes, pred_boxes, iou_thr=0.5):
         'recalls': recalls,
         'model_thrs': model_thrs}
 
-
 def plot_pr_curve(precisions, recalls, category='Cars', label=None, color=None, ax=None):
     """Simple plotting helper function"""
 
     if ax is None:
-        plt.figure(figsize=(10, 8))
+
+        plt.figure(figsize=(10,8))
         ax = plt.gca()
 
     if color is None:
@@ -342,21 +334,16 @@ def plot_pr_curve(precisions, recalls, category='Cars', label=None, color=None, 
     ax.set_xlabel('recall')
     ax.set_ylabel('precision')
     ax.set_title('Precision-Recall curve for {}'.format(category))
-    ax.set_xlim([0.0, 1.3])
-    ax.set_ylim([0.0, 1.2])
+
+    ax.set_xlim([0.0,1.3])
+    ax.set_ylim([0.0,1.2])
     return ax
-
-
 def sortDetectionsByKey(detectionList, key, decreasing=False):
     sortedList = sorted(detectionList, key=lambda k: k[key], reverse=decreasing)
     return sortedList
-
-
 def shuffle_detectionList(detectionList):
     random.shuffle(detectionList)
     return detectionList
-
-
 def getBboxFromDetection(detection):
     bbox = np.zeros(4)
     bbox[0] = detection['left']
@@ -365,10 +352,9 @@ def getBboxFromDetection(detection):
     bbox[3] = detection['left'] + detection['height']
     return bbox
 
-
 def addBboxesToFrames(framesPath, detections, groundTruth, name, firstFrame=0, lastFrame=100):
-    # Show GT bboxes and detections
-    # Preprocess detections and GT
+    #Show GT bboxes and detections
+    #Preprocess detections and GT
     for detection in detections:
         detection['isGT'] = False
     for item in groundTruth:
@@ -390,19 +376,20 @@ def addBboxesToFrames(framesPath, detections, groundTruth, name, firstFrame=0, l
         frame = item['frame'] - 1
         if frame >= firstFrame:
             if frame != prevFrame:
-                frameMat = cv2.resize(frameMat, (1920 // 4, 1080 // 4))
+
+                frameMat = cv2.resize(frameMat, (1920//4, 1080//4))
                 videoFrames.append(frameMat)
                 if frame > lastFrame:
                     break
                 frameMat = cv2.imread(frameFiles[frame])
             startPoint = (int(item['left']), int(item['top']))
             endPoint = (int(startPoint[0] + item['width']), int(startPoint[1] + item['height']))
-            thickness = 2  # 4 if item['isGT'] is True else 2
+
+            thickness = 2 #4 if item['isGT'] is True else 2
             color = (255, 255, 0) if item['isGT'] is True else (255, 0, 0)
             frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, thickness)
             prevFrame = frame
     imageio.mimsave(name + '.gif', videoFrames, fps=10)
-
 
 def getDetectionsPerFrame(detections):
     detectionDict = {}
@@ -412,7 +399,6 @@ def getDetectionsPerFrame(detections):
         else:
             detectionDict[detection['frame']].append(detection)
     return detectionDict
-
 
 def read_annotations(annotation_path, video_len):
     """
@@ -445,8 +431,8 @@ def read_annotations(annotation_path, video_len):
     return groundTruth
 
 
-def add_noise_to_detections(gt_boxes_path, video_len, rescaling_factor=[0.5, 1], translation_factor=30,
-                            prob_discard=0.1):
+def add_noise_to_detections(gt_boxes_path, video_len, rescaling_factor = [0.5, 1], translation_factor = 30, prob_discard = 0.1):
+
     noisy_gt_boxes = []
     # rescaling_factor = [0.5, 1]
     # translation_factor = 30
@@ -471,21 +457,19 @@ def add_noise_to_detections(gt_boxes_path, video_len, rescaling_factor=[0.5, 1],
                 # tl_x, tl_y = detectionDict['left'], detectionDict['top']
                 detectionDict['left'] += np.random.uniform(0, 1) * translation_factor
                 detectionDict['top'] += np.random.uniform(0, 1) * translation_factor
-                detectionDict['width'] = detectionDict['width'] * np.random.uniform(rescaling_factor[0],
-                                                                                    rescaling_factor[1])
-                detectionDict['height'] = detectionDict['height'] * np.random.uniform(rescaling_factor[0],
-                                                                                      rescaling_factor[1])
+
+                detectionDict['width'] = detectionDict['width'] * np.random.uniform(rescaling_factor[0], rescaling_factor[1])
+                detectionDict['height'] = detectionDict['height'] * np.random.uniform(rescaling_factor[0], rescaling_factor[1])
+
 
                 noisy_gt_boxes.append(detectionDict)
 
     return noisy_gt_boxes
 
-
 def box(o):
     return [o['left'], o['top'], o['left'] + o['width'], o['top'] + o['height']]
+def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5, have_confidence = True, verbose = False):
 
-
-def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5, have_confidence=True, verbose=False):
     groundtruth_list = deepcopy(groundtruth_list_original)
 
     # Sort detections by confidence
@@ -497,8 +481,9 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
     TP = 0
     FP = 0
     FN = 0
-    precision = list();
-    recall = list()
+
+    precision = list(); recall = list()
+
 
     # to compute mAP
     threshold = 1
@@ -508,21 +493,25 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
     for n, detection in enumerate(detections_list):
         match_flag = False
         if threshold != temp:
-            # print(threshold)
+
+            #print(threshold)
+
             temp = threshold
 
         # Get groundtruth of the target frame
         gt_on_frame = [x for x in groundtruth_list if x['frame'] == detection['frame']]
         gt_bboxes = [(box(o), o['confidence'] if ('confidence' in o) else 1) for o in gt_on_frame]
 
-        # print(gt_bboxes)
+
+        #print(gt_bboxes)
+
         for gt_bbox in gt_bboxes:
             iou = bb_iou(gt_bbox[0], box(detection))
             if iou > IoU_threshold and gt_bbox[1] > 0.9:
                 match_flag = True
                 TP += 1
-                gt_used = next(
-                    (x for x in groundtruth_list if x['frame'] == detection['frame'] and box(x) == gt_bbox[0]), None)
+
+                gt_used = next((x for x in groundtruth_list if x['frame'] == detection['frame'] and box(x) == gt_bbox[0]), None)
                 gt_used['confidence'] = 0
                 break
 
@@ -530,16 +519,17 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
             FP += 1
 
         # Save metrics
-        precision.append(TP / (TP + FP))
+
+        precision.append(TP/(TP+FP))
         if groundtruth_size:
-            recall.append(TP / groundtruth_size)
+            recall.append(TP/groundtruth_size)
 
     recall_step = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
     precision_step = [0] * 11
     max_precision_i = 0.0
     for i in range(len(recall)):
-        recall_i = recall[-(i + 1)]
-        precision_i = precision[-(i + 1)]
+        recall_i = recall[-(i+1)]
+        precision_i = precision[-(i+1)]
         max_precision_i = max(max_precision_i, precision_i)
         for j in range(len(recall_step)):
             if recall_i >= recall_step[j]:
@@ -548,11 +538,12 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
                 break
     if verbose:
         plt.figure(1)
-        plt.plot(recall, precision, 'r--')
+
+        plt.plot(recall, precision,'r--')
         plt.xlim((0, 1.0))
         plt.ylim((0, 1.0))
         plt.title('Precision - recall curve')
-        plt.plot(recall_step, precision_step, 'g--')
+        plt.plot(recall_step, precision_step,'g--')
         plt.show()
 
     # Check false negatives
@@ -580,19 +571,18 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
         precision = float(TP) / float(TP + FP)
         recall = float(TP) / float(TP + FN)
         F1_score = 2 * recall * precision / (recall + precision)
-    # print(TP+FP)
-    # print("precision:{}".format(precision))
-    # print("recall:{}".format(recall))
-    mAP = sum(precision_step) / 11
+
+    #print(TP+FP)
+    #print("precision:{}".format(precision))
+    #print("recall:{}".format(recall))
+    mAP = sum(precision_step)/11
     if verbose:
         print("mAP: {}".format(mAP))
 
-    # return precision, recall, precision_step, F1_score, mAP
+    #return precision, recall, precision_step, F1_score, mAP
     return mAP
 
-
-def candidate_window(showme, save_path, frame, n_frame, mask, detections, min_h=80, max_h=500, min_w=100, max_w=600,
-                     min_ratio=0.2, max_ratio=1.30):
+def candidate_window(showme, save_path, frame, n_frame, mask, detections, min_h=80, max_h=500, min_w=100, max_w=600, min_ratio=0.2, max_ratio=1.30):
     label_image = label(mask)
     regions = regionprops(label_image)
     # Blue color in BGR
@@ -605,10 +595,10 @@ def candidate_window(showme, save_path, frame, n_frame, mask, detections, min_h=
         bbox = region.bbox
         if filter_connected_components(bbox, min_h, max_h, min_w, max_w, min_ratio, max_ratio):
             box_h, box_w = bbox[2] - bbox[0], bbox[3] - bbox[1]
-            det = Detection(frame=n_frame, label='car', xtl=bbox[1], ytl=bbox[0], width=box_w, height=box_h,
-                            confidence=1)
+            det = Detection(frame=n_frame, label='car', xtl=bbox[1], ytl=bbox[0], width=box_w, height=box_h, confidence=1)
             window_candidates.append(det)
-            image = cv.rectangle(frame, (bbox[1], bbox[0]), (bbox[1] + box_w, bbox[0] + box_h), color, thickness)
+            image = cv.rectangle(frame, (bbox[1], bbox[0] ), (bbox[1] +box_w , bbox[0] +box_h), color, thickness)
+
             detection = {}
             detection["frame"] = n_frame
             detection["left"] = bbox[1]
@@ -618,18 +608,20 @@ def candidate_window(showme, save_path, frame, n_frame, mask, detections, min_h=
             detections.append(detection)
         if (showme):
             cv.imshow("window_name", frame)
-        cv.imwrite(save_path + '/candidate/window_name_' + '%05d.jpg' % n_frame, frame)
+
+        cv.imwrite(save_path+'/candidate/window_name_' + '%05d.jpg' % n_frame, frame)
 
     return detections
 
 
 def filter_connected_components(bbox, min_h, max_h, min_w, max_w, min_ratio, max_ratio):
     box_h, box_w = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    if box_h > max_h or box_w > max_w:
+
+    if box_h>max_h or box_w>max_w:
         return False
-    if box_h < min_h or box_w < min_w:
+    if box_h<min_h or box_w<min_w:
         return False
-    if (box_h / box_w) > max_ratio or (box_h / box_w) < min_ratio:
+    if (box_h/box_w)>max_ratio or (box_h/box_w)<min_ratio:
         return False
     else:
         return True
@@ -640,18 +632,16 @@ def visualize_boxes(pixel_candidates, gt_candidate, detection_candidate):
     ax.imshow(pixel_candidates, cmap='gray')
     for candidate in gt_candidate:
         minc, minr, maxc, maxr = candidate
-        rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor='green',
-                                  linewidth=2)
+        rect = mpatches.Rectangle((minc, minr), maxc-minc+1, maxr-minr+1, fill=False, edgecolor='green', linewidth=2)
         ax.add_patch(rect)
 
     for candidate in detection_candidate:
         minc, minr, maxc, maxr = candidate
-        rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor='red',
-                                  linewidth=2)
+
+        rect = mpatches.Rectangle((minc, minr), maxc-minc+1, maxr-minr+1, fill=False, edgecolor='red', linewidth=2)
         ax.add_patch(rect)
 
     plt.show()
-
 
 def plot_bboxes(video_path, groundtruth, detections):
     capture = cv2.VideoCapture(video_path)
@@ -702,7 +692,6 @@ def morphological_filtering(mask):
 
     return mask_fill
 
-
 def chage_color_space(frame, space):
     if space == 'hsv':
         frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
@@ -714,8 +703,8 @@ def chage_color_space(frame, space):
 
 
 def addBboxesToFrames_gif(framesPath, detections, groundTruth, start_frame, end_frame, name):
-    # Show GT bboxes and detections
-    # Preprocess detections and GT
+    #Show GT bboxes and detections
+    #Preprocess detections and GT
     for detection in detections:
         detection['isGT'] = False
     for item in groundTruth:
@@ -750,15 +739,14 @@ def addBboxesToFrames_gif(framesPath, detections, groundTruth, start_frame, end_
 
 def bbox2mask(y1, x1, y2, x2, img_H, img_W):
     mask = np.zeros([img_H, img_W], dtype=np.uint8)
-    mask[y1:y2 + 1, x1:x2 + 1] = 1
+    mask[y1:y2+1, x1:x2+1] = 1
     return mask
 
-
 def save_instances(image, boxes, masks, class_ids, class_names,
-                   scores=None, title="",
-                   figsize=(16, 16), ax=None,
-                   show_mask=True, show_bbox=True,
-                   colors=None, captions=None, imName="tmp.jpg"):
+                    scores=None, title="",
+                    figsize=(16, 16), ax=None,
+                    show_mask=True, show_bbox=True,
+                    colors=None, captions=None, imName="tmp.jpg"):
     """
     boxes: [num_instance, (y1, x1, y2, x2, class_id)] in image coordinates.
     masks: [height, width, num_instances]
@@ -804,8 +792,9 @@ def save_instances(image, boxes, masks, class_ids, class_names,
         y1, x1, y2, x2 = boxes[i]
         if show_bbox:
             p = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2,
-                                  alpha=0.7, linestyle="dashed",
-                                  edgecolor=color, facecolor='none')
+
+                                alpha=0.7, linestyle="dashed",
+                                edgecolor=color, facecolor='none')
             ax.add_patch(p)
 
         # Label
@@ -838,7 +827,6 @@ def save_instances(image, boxes, masks, class_ids, class_names,
         ax.imshow(masked_image.astype(np.uint8))
         plt.savefig(imName)
 
-
 def upscaleDetections(detections):
     for detection in detections:
         detection['height'] = int(detection['height'] * 1080 / float(512))
@@ -846,3 +834,9 @@ def upscaleDetections(detections):
         detection['left'] = int(detection['left'] * 1920 / float(512))
         detection['top'] = int(detection['top'] * 1080 / float(512))
     return detections
+
+def adjustBboxWithOpticalFlow(bbox, opticalFlow):
+    # Compute average optical flow over the entire bbox and move the coordinates of the bbox accordingly
+    # Keep in mind bbox might go out of bounds, need to take that into account
+    return bbox
+
