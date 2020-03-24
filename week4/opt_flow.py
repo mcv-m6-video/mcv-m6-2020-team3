@@ -108,7 +108,7 @@ def farneback(frame1, frame2):
     print('Time farneback Taken: %.2f seconds for image of size (%d, %d, %d)' % (
         e - s, frame1.shape[0], frame1.shape[1], frame1.shape[2]))
     # Plot
-    hsv = np.zeros_like(frame1)
+    """hsv = np.zeros_like(frame1)
     hsv[..., 1] = 255
     mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
     hsv[..., 0] = ang * 180 / np.pi / 2
@@ -120,7 +120,7 @@ def farneback(frame1, frame2):
     arrows = draw_flow(next, flow)
     cv2.imwrite('output/optical_farneback.png', arrows)
     cv2.imshow('optical farneback flow', arrows)
-    cv2.waitKey()
+    cv2.waitKey()"""
     return flow
 
 def lucas_kanade(frame1, frame2):

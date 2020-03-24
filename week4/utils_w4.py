@@ -835,8 +835,31 @@ def upscaleDetections(detections):
         detection['top'] = int(detection['top'] * 1080 / float(512))
     return detections
 
-def adjustBboxWithOpticalFlow(bbox, opticalFlow):
+def adjustBboxWithOpticalFlow(bbox, opticalFlow, crop_center):
     # Compute average optical flow over the entire bbox and move the coordinates of the bbox accordingly
     # Keep in mind bbox might go out of bounds, need to take that into account
+    reduction_h = 0
+    reduction_v = 0
+    if crop_center is True:
+        #Compute mean OF only on 2/3 of width and height, as area further from the center of bbox is probably static
+        height = bbox[3]-bbox[1]
+        width = bbox[2]-bbox[0]
+        reduction_h = width/float(3) / 2
+        reduction_v = height/float(3) / 2
+        reduction_h = int(reduction_h)
+        reduction_v = int(reduction_v)
+    ofRegion = opticalFlow[bbox[1]+reduction_v:bbox[3]+1-reduction_v, bbox[0]+reduction_h:bbox[2]+1-reduction_h,:]
+    xOffset = np.mean(ofRegion[:,:,0])
+    yOffset = np.mean(ofRegion[:,:,1])
+    xOffset = int(xOffset)
+    yOffset = int(yOffset)
+    if xOffset > 1 or yOffset > 1:
+        print("Sizeable offset")
+        print("x: " + str(xOffset))
+        print("y: " + str(yOffset))
+    bbox[0] += xOffset
+    bbox[1] += yOffset
+    bbox[2] += xOffset
+    bbox[3] += yOffset
     return bbox
 
