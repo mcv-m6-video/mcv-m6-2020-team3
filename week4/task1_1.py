@@ -1,8 +1,12 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from metrics import flow_metrics
 from math import sqrt
+import time
 
 
 matching_methods = ['cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
@@ -28,7 +32,7 @@ def read_file(path):
     return result
 
 
-def block_matching(frame1, frame2, block_size=16, search_area=64, method='cv2.TM_CCORR_NORMED', bwd=True):
+def block_matching(frame1, frame2, block_size=16, search_area=64, method='cv2.TM_CCORR_NORMED', bwd=False):
     height = frame1.shape[1]
     width = frame1.shape[0]
     if method == 'cv2.TM_CCORR_NORMED':
@@ -94,14 +98,43 @@ def main():
 
     frame1 = cv2.cvtColor(frame1_rgb, cv2.COLOR_RGB2GRAY)
     frame2 = cv2.cvtColor(frame2_rgb, cv2.COLOR_RGB2GRAY)
-
-    for block_size in [16]:  # search space
-        for search_area in [32]:
+    MSEN = np.zeros((15,15))
+    PEPN = np.zeros((15,15))
+    i = 0
+    for block_size in [8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64]:  # search space
+        j=0
+        for search_area in [8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64]:
             if search_area <= block_size: continue
-            motion_blocks, motion = block_matching(frame1, frame2, block_size=block_size, search_area=search_area, bwd=True)
-
+            start = time.time()
+            motion_blocks, motion = block_matching(frame1, frame2, block_size=block_size, search_area=search_area, bwd=False)
+            end = time.time()
+            print(end - start)
             msen, pepn, img_err, vect_err = flow_metrics(motion.astype(np.float32), gt)
             print("Search area ", search_area, "block size", block_size, "MSEN: ", msen, " - PEPN: ", pepn)
+            MSEN[i, j] = msen
+            PEPN[i, j] = pepn
+            j=j+1
+            # PEPN.append(pepn)
+        i = i+1
+    # Plot the surface.
+    # fig = plt.figure()
+    # ax = fig.gca(projection='3d')
+    #
+    #
+    # x = np.arange(8, 68, 4)
+    # y = np.arange(8, 68, 4)
+    # x, y = np.meshgrid(x, y)
+    # surf = ax.plot_surface(x, y, MSEN, cmap='afmhot',
+    #                        linewidth=0, antialiased=False)
+    #
+    # # Add a color bar which maps values to colors.
+    # fig.colorbar(surf, shrink=0.5, aspect=5)
+    # ax.set_title('MSEN')
+    # ax.set_xlabel('Block size')
+    # ax.set_ylabel('Search area')
+    # ax.set_zlabel('MSEN error')
+    #
+    # plt.show()
 
     plt.imshow(img_err)
     plt.show()
@@ -130,4 +163,9 @@ def main():
 
 if __name__ == '__main__':
     main()
-
+    # print(timeit.timeit(block_matching(), number=100000))
+    # x = np.asarray([8, 12 , 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64])
+    # y = np.asarray([8, 12 , 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64])
+    # z = np.asarray(10.277124, 9.6373, 8.877609, 7.941295, 7.484724, 6.9695964, 6.611499, 6.452316, 6.338886, 6.2480536, 6.2353067, 6.407853, 6.559667,
+    #                6.756943, 10.10727, 9.262248, 8.403364, 7.5238, 6.936257, 6.3451214, 6.0333867,              )
+    # z1 = np.asarray()
