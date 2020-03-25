@@ -853,10 +853,6 @@ def adjustBboxWithOpticalFlow(bbox, opticalFlow, crop_center):
     yOffset = np.mean(ofRegion[:,:,1])
     xOffset = int(xOffset)
     yOffset = int(yOffset)
-    if xOffset > 1 or yOffset > 1:
-        print("Sizeable offset")
-        print("x: " + str(xOffset))
-        print("y: " + str(yOffset))
     bbox[0] += xOffset
     bbox[1] += yOffset
     bbox[2] += xOffset
