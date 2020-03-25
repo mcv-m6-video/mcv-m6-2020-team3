@@ -88,7 +88,7 @@ def coarse2Fine(prev_frame, curr_frame, viz):
 
     return flow, flow_return
 
-def farneback(frame1, frame2 ,viz):
+def farneback(frame1, frame2 , viz=False):
 
     prvs = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
     next = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
@@ -101,7 +101,7 @@ def farneback(frame1, frame2 ,viz):
     print('Time farneback Taken: %.2f seconds for image of size (%d, %d, %d)' % (
         e - s, frame1.shape[0], frame1.shape[1], frame1.shape[2]))
     # Plot
-    if viz:
+    if viz is True:
         hsv = np.zeros_like(frame1)
         hsv[..., 1] = 255
         mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
