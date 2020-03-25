@@ -101,9 +101,9 @@ def main():
     MSEN = np.zeros((15,15))
     PEPN = np.zeros((15,15))
     i = 0
-    for block_size in [8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64]:  # search space
+    for block_size in [16]:  # search space
         j=0
-        for search_area in [8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64]:
+        for search_area in [32]:
             if search_area <= block_size: continue
             start = time.time()
             motion_blocks, motion = block_matching(frame1, frame2, block_size=block_size, search_area=search_area, bwd=False)
