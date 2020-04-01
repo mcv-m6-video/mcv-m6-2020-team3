@@ -6,7 +6,7 @@ Note, frame starts from 1.
 
 import pickle
 from utils import addBboxesToFrames, calculate_mAP, bb_iou, addBboxesToFrames_gif, upscaleDetections, adjustBboxWithOpticalFlow
-from utils_tracking import read_tracking_annotations, compute_mAP_track, addTracksToFrames, addTracksToFrames_gif
+from utils_tracking import read_tracking_annotations, compute_mAP_track, addTracksToFrames, addTracksToFrames_gif, compute_idf1
 from tqdm import tqdm
 from track import Track
 import opt_flow as of
@@ -122,10 +122,10 @@ if __name__ == "__main__":
     detections.sort(key=lambda x: x['frame'])
 
     # detections_tracks = find_tracking(detections, video_length, missing_chance=1, lou_max_threshold=0.01)
-    missing_chance_list = [1, 3, 5, 7]
-    lou_max_threshold_list = [0.01, 0.1, 0.3, 0.5, 0.7]
     missing_chance_list = [3, 5, 7]
     lou_max_threshold_list = [0.3, 0.5, 0.7]
+    missing_chance_list = [3]
+    lou_max_threshold_list = [0.3]
     result_list = []
     for missing_chance in missing_chance_list:
         for lou_max_threshold in lou_max_threshold_list:
@@ -144,11 +144,7 @@ if __name__ == "__main__":
     for track_one in detections_tracks:
         track_one.detections.sort(key=lambda x: x['frame'])
 
-    #Plot next frame and previous frame adjusted with of
-    exit()
-
-    addTracksToFrames_gif(video_path, detections_tracks, tracks_gt_list, start_frame=210, end_frame=390, name="test")
-
+    compute_idf1(tracks_gt_list, detections_tracks, video_length)
 
 
 
