@@ -11,10 +11,7 @@ import utils_w3 as utw3
 from utils_Gaussian import read_video_and_divide, calculate_mean_std_first_part_video, calculate_mask, find_detections
 from tqdm import tqdm
 # Root directory of the project
-ROOT_DIR = os.path.abspath("./Mask_RCNN")
-
-# Import Mask RCNN
-sys.path.append(ROOT_DIR)  # To find local version of the library
+  # To find local version of the library
 from mrcnn import utils
 from mrcnn import visualize
 from mrcnn.config import Config

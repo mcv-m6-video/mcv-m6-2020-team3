@@ -4,6 +4,21 @@
 
 
 ## Abstract
+### Week 4
+#### Optical Flow with Block Matching
++ Implement a block matching solution for optical flow estimation with diferents configurations
++ Evaluation: 
+  + MSEN Mean Square Error in Non-occluded areas
+  + PEPN: Percentage of Erroneous Pixels in Non-occluded areas
+  + Runtime 
+
+#### Off-the-shelf Optical Flow
+
+#### Video stabilization
+#### Video stabilization with Block Matching
+#### Off-the-shelf Stabilization
+#### Object Tracking
+#### Object Tracking with Optical Flow
 
 ### Week 5
 

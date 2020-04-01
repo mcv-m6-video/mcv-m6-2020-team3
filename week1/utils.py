@@ -521,3 +521,32 @@ def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5,
     #return precision, recall, precision_step, F1_score, mAP
     return mAP
 
+def read_txt_annotations(gt_path,analyze=False):
+    gt_list = {}
+    path="../../AIC20_track3/train/S03/c010/gt/gt.txt "
+    if analyze:
+        max_w = 0
+        min_w = 2000
+        max_h = 0
+        min_h = 2000
+        min_ratio = 100
+        max_ratio = 0
+        
+        f= open(path,"r")
+        lines = f.readlines()
+        for line in lines:
+           # print(line)
+            l = line.split(',')
+            
+            gt_list=l.append(Detection(int(l[0])-1, 'car', 
+                                             int(float(l[2])), int(float(l[3])), 
+                                             int(float(l[4])), int(float(l[5])),
+                                             float(l[6]), track_id=int(l[1])))
+            if analyze:
+                if int(l[4]) < min_w: min_w = int(l[4])
+                if int(l[4]) > max_w: max_w = int(l[4])
+                if int(l[5]) < min_h: min_h = int(l[5])
+                if int(l[5]) > max_h: max_h = int(l[5])
+                if int(l[5])/int(l[4]) > max_ratio: max_ratio = int(l[5])/int(l[4])
+                if int(l[5])/int(l[4]) < min_ratio: min_ratio = int(l[5])/int(l[4])
+    return gt_list
