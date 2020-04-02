@@ -468,9 +468,10 @@ def add_noise_to_detections(gt_boxes_path, video_len, rescaling_factor = [0.5, 1
 
 def box(o):
     return [o['left'], o['top'], o['left'] + o['width'], o['top'] + o['height']]
-def calculate_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5, have_confidence = True, verbose = False):
+def calculate_mAP(groundtruth_list_original, detections_list_original, IoU_threshold=0.5, have_confidence = True, verbose = False):
 
     groundtruth_list = deepcopy(groundtruth_list_original)
+    detections_list = deepcopy(detections_list_original)
 
     # Sort detections by confidence
     if have_confidence:
@@ -859,3 +860,45 @@ def adjustBboxWithOpticalFlow(bbox, opticalFlow, crop_center):
     bbox[3] += yOffset
     return bbox
 
+def addBboxesToFrames_avi(framesPath, detections_ori, groundTruth_ori, name):
+    """
+    This function produce the video in the format of .avi.
+    :param framesPath:
+    :param detections_ori:
+    :param groundTruth_ori:
+    :param name:
+    :return:
+    """
+    # the following operation will change the elements in detections and gt.
+    # so deepcopy and protect the original data.
+    groundTruth = deepcopy(groundTruth_ori)
+    detections = deepcopy(detections_ori)
+    #Show GT bboxes and detections
+    #Preprocess detections and GT
+    for detection in detections:
+        detection['isGT'] = False
+    for item in groundTruth:
+        item['isGT'] = True
+
+    combinedList = detections + groundTruth
+
+    combinedList = sortDetectionsByKey(combinedList, 'frame')
+
+    frameFiles = glob.glob(framesPath + '/*.jpg')
+    size = (1920, 1080)
+    fps = 10
+    out = cv2.VideoWriter(name + '.avi',cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
+
+    prevFrame = 0
+    frameMat = cv2.imread(frameFiles[0])
+    for item in tqdm(combinedList):
+        frame = item['frame'] - 1
+        if frame != prevFrame:
+            out.write(frameMat)
+            frameMat = cv2.imread(frameFiles[frame])
+        startPoint = (int(item['left']), int(item['top']))
+        endPoint = (int(startPoint[0] + item['width']), int(startPoint[1] + item['height']))
+        color = (255, 0, 0) if item['isGT'] is True else (0, 0, 255)
+        frameMat = cv2.rectangle(frameMat, startPoint, endPoint, color, 2)
+        prevFrame = frame
+    out.release()

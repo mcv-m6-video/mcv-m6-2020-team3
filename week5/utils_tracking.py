@@ -10,68 +10,6 @@ import motmetrics as mm
 import pickle
 
 
-def detection_is_dictionary(frame_id, left, top, width, height, confidence = 1.0):
-    detection = {}
-    detection['frame'] = frame_id
-    detection['left'] = left
-    detection['top'] = top
-    detection['width'] = width
-    detection['height'] = height
-    detection['confidence'] = confidence
-    return detection
-
-def read_tracking_annotations(annotation_path, video_length):
-    """
-    Arguments:
-    capture: frames from video, opened as cv2.VideoCapture
-    root: parsed xml annotations as ET.parse(annotation_path).getroot()
-    """
-    root = ET.parse(annotation_path).getroot()
-
-    ground_truths = []
-    tracks = []
-    images = []
-    num = 0
-
-    for num in tqdm(range(video_length)):
-        #for now: (take only numannotated annotated frames)
-        #if num > numannotated:
-        #    break
-
-        for track in root.findall('track'):
-            gt_id = track.attrib['id']
-            label = track.attrib['label']
-            box = track.find("box[@frame='{0}']".format(str(num)))
-
-            #if box is not None and (label == 'car' or label == 'bike'):    # Read cars and bikes
-            if box is not None and label == 'car':                          # Read cars
-
-                #if box.attrib['occluded'] == '1':                           # Discard occluded
-                #    continue
-
-                #if label == 'car' and box[0].text == 'true':               # Discard parked cars
-                #    continue
-
-                frame = int(box.attrib['frame'])
-                #if frame < 534:
-                #    continue
-
-                xtl = int(float(box.attrib['xtl']))
-                ytl = int(float(box.attrib['ytl']))
-                xbr = int(float(box.attrib['xbr']))
-                ybr = int(float(box.attrib['ybr']))
-                ground_truths.append(detection_is_dictionary(frame, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
-                track_corresponding = [t for t in tracks if t.id == gt_id]
-                if len(track_corresponding) > 0:
-                    track_corresponding[0].detections.append(detection_is_dictionary(frame+1, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
-                else:
-                    track_corresponding = Track(gt_id, [detection_is_dictionary(frame+1, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1)])
-                    tracks.append(track_corresponding)
-
-    # print(ground_truths)
-    return ground_truths, tracks
-
-
 def compute_mAP_track(groundtruth_tracks, detections_tracks, IoU_threshold=0.5, verbose = False):
     """
     Calculate the mean of the best mAP for each track of the ground truth
@@ -143,7 +81,7 @@ def write_one_frame(detections_tracks, frame_id, frameMat, color):
 
 def addTracksToFrames(framesPath, detections_tracks, tracks_gt_list, start_frame = 1, end_frame = 2141, name = "test"):
     """
-    write the video of the tracking result
+    write the video of the tracking result in the format .avi
     :param framesPath: path of frames
     :param detections_tracks: detections in list of Track. Detections in Track should be sorted.
     :param tracks_gt_list: ground truth in list of Track. Detections in Track should be sorted.
@@ -202,13 +140,22 @@ def find_frame_in_track(tracks, frame_id):
                 break
     return object_id_list, box_list
 
+def find_frame_in_gt(gt, frame_id):
+    object_id_list = []
+    box_list = []
+    for instance in gt:
+        if instance['frame'] == frame_id:
+            object_id_list.append(instance['ID'])
+            box_list.append([instance['left'], instance['top'], instance['width'], instance['height']])
+    return object_id_list, box_list
 
-def compute_idf1(groundtruth_tracks, detections_tracks, video_length, IoU_threshold=0.5, verbose = False):
+
+def calculate_idf1(gt, detections_tracks, video_length, IoU_threshold=0.5, verbose = False):
     acc = mm.MOTAccumulator(auto_id=True)
 
     for i in range(video_length):
         frame_id = i + 1
-        gt_ids, gt_bboxes = find_frame_in_track(groundtruth_tracks, frame_id)
+        gt_ids, gt_bboxes = find_frame_in_gt(gt, frame_id)
         detections_ids, detections_bboxes = find_frame_in_track(detections_tracks, frame_id)
 
         distances_gt_det = mm.distances.iou_matrix(gt_bboxes, detections_bboxes, max_iou=1.)
@@ -224,9 +171,6 @@ def compute_idf1(groundtruth_tracks, detections_tracks, video_length, IoU_thresh
 
 
 if __name__ == "__main__":
-    with open("track_gt_de.pkl", 'rb') as p:
-        tracks_gt_list, detections_tracks, video_length = pickle.load(p)
-        p.close()
+    pass
 
-    compute_idf1(tracks_gt_list, detections_tracks, video_length)
 
