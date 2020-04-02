@@ -24,7 +24,7 @@ import colorsys
 from skimage.measure import find_contours
 from matplotlib import patches, lines
 from matplotlib.patches import Polygon
-#from mrcnn.visualize import random_colors, apply_mask
+from mrcnn.visualize import random_colors, apply_mask
 
 def create_folder(path):
     if not os.path.exists(path):
@@ -35,7 +35,7 @@ def getDetections(detectionFilePath):
         detections = [getDictFromDetection(line) for line in f]
     return detections
 
-def getDictFromDetection(detectionStr):
+def getDictFromDetection(detectionStr, isGT=False):
     detectionList = detectionStr.split(",")
     detectionDict = {}
     detectionDict['frame'] = int(float(detectionList[0]))
@@ -43,7 +43,8 @@ def getDictFromDetection(detectionStr):
     detectionDict['top'] = int(float(detectionList[3]))
     detectionDict['width'] = int(float(detectionList[4]))
     detectionDict['height'] = int(float(detectionList[5]))
-    detectionDict['confidence'] = float(detectionList[6])
+    if isGT is not True:
+        detectionDict['confidence'] = float(detectionList[6])
     return detectionDict
 
 def bb_iou(bboxA, bboxB):

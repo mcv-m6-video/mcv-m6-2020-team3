@@ -12,6 +12,7 @@ from utils_Gaussian import read_video_and_divide, calculate_mean_std_first_part_
 from tqdm import tqdm
 from AICityConfig import AICityConfig
 from AICityDataset import AICityDataset
+from AICityIterator import AICityIterator
 # Root directory of the project
 ROOT_DIR = os.path.abspath("./Mask_RCNN")
 
@@ -48,24 +49,18 @@ COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 if not os.path.exists(COCO_MODEL_PATH):
     utils.download_trained_weights(COCO_MODEL_PATH)
 
-# # Path to Shapes trained weights
-SHAPES_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_shapes.h5")
-
-# video_length = 200
-video_length = 2141
-video_split_ratio = 0.25
-video_path = "./Datasets/AICity/frames"
-groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
+groundtruth_path = 'Datasets/AICity/aicity_annotations.xml'
 showImages = False
 
 config = AICityConfig()
 config.display()
 # Training dataset
 dataset_train = AICityDataset()
-dataset_train.get_Images(framePath=video_path, length=video_length, isTrain=True, trainSplit=0.25, height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
+dataset_train.get_Images(isTrain=True, height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
 dataset_train.prepare()
+#Validation dataset
 dataset_val = AICityDataset()
-dataset_val.get_Images(framePath=video_path, length=video_length, isTrain=False, trainSplit=0.25, height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
+dataset_val.get_Images(isTrain=False, height=config.IMAGE_SHAPE[0], width=config.IMAGE_SHAPE[1])
 dataset_val.prepare()
 
 # Create model in training mode
@@ -148,21 +143,29 @@ ut.save_instances(original_image, r['rois'], r['masks'], r['class_ids'],
 APs = []
 print("Evaluating fine-tuned model")
 resultsPkl = []
+imagesWithGT = 0
 for image_id in tqdm(dataset_val.image_ids):
     #Load image and ground truth data
     image, image_meta, gt_class_id, gt_bbox, gt_mask = \
         modellib.load_image_gt(dataset_val, inference_config,
                                image_id, use_mini_mask=False)
     molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
-    #Run object detection
-    results = model.detect([image], verbose=0)
-    resultsPkl.append(results)
-    r = results[0]
-    #Compute AP
-    AP, precisions, recalls, overlaps = \
-        utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
-                         r["rois"], r["class_ids"], r["scores"], r['masks'])
-    APs.append(AP)
+    if len(gt_class_id) > 0:
+        #Run object detection
+        results = model.detect([image], verbose=0)
+        resultsPkl.append(results)
+        r = results[0]
+        imagesWithGT += 1
+        #Compute AP
+        AP, precisions, recalls, overlaps = \
+            utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
+                            r["rois"], r["class_ids"], r["scores"], r['masks'])
+        APs.append(AP)
+
+imagesWithoutGT = len(dataset_val.image_ids) - imagesWithGT
+
+print("Images with GT " + str(imagesWithGT))
+print("Images without GT " + str(imagesWithoutGT))
 
 print("Saving results to pickle")
 

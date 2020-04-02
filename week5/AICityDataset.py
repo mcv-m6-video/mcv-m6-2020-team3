@@ -11,57 +11,45 @@ from mrcnn.config import Config
 from mrcnn import utils
 import glob
 import cv2
-from utils_tracking import read_tracking_annotations
 from utils import bbox2mask
-from sklearn.model_selection import train_test_split
-
 import numpy as np
 
+from AICityIterator import AICityIterator
+from AICityGroundtruth import getGroundtruth
+
 class AICityDataset(utils.Dataset):
-    def get_Images(self, height, width, framePath, length=None, isTrain = True, trainSplit = 0.25):
-        gtPath = 'Datasets/AICity/aicity_annotations.xml'
-        groundTruth, _ = read_tracking_annotations(gtPath, length)
-        groupedGT = [[] for x in range(length)]
-        for elem in groundTruth:
-            currFrame = elem['frame'] 
-            groupedGT[currFrame].append(elem)
-        self.groundTruth = groupedGT
+    datasetStructure = {
+        'S01': ['c001', 'c002', 'c003', 'c004', 'c005'],
+        'S03': ['c010', 'c011', 'c012', 'c013', 'c014', 'c015'],
+        'S04': ['c016', 'c018', 'c020', 'c022', 'c024', 'c026', 'c028', 'c030', 'c032', 'c034', 'c036', 'c038', 'c040','c017', 'c019', 'c021', 'c023', 'c025', 'c027', 'c029', 'c031', 'c033', 'c035', 'c037', 'c039']
+    }
+
+    trainSequences = ['S01', 'S04']
+    testSequences = ['S03']
+    
+    def get_Images(self, height, width, isTrain = True):    
         self.add_class("AICity", 1, "Car")
-        self.origHeight = 1080
-        self.origWidth = 1920
-        framePaths = glob.glob(framePath + '/*.jpg')
-        framePaths = sorted(framePaths)
-        framePaths = framePaths[0:length] if length is not None else framePaths
-        frameIds = list(range(length))
-        if method == "first":
-            splitPoint = int(length*trainSplit)
-            datasetFrames = framePaths[0:splitPoint] if isTrain is True else framePaths[splitPoint:]
-            frameIds = frameIds[0:splitPoint] if isTrain is True else frameIds[splitPoint:]
-        elif method == "random":
-            framesTrain, framesTest, idsTrain, idsTest = train_test_split(framePaths, frameIds, train_size=trainSplit)
-            if isTrain is True:
-                datasetFrames = framesTrain
-                frameIds = idsTrain
-            else:
-                datasetFrames = framesTest
-                frameIds = idsTest
-        elif method == "interleaved":
-            #Hardcoded 25%
-            tmpIds = []
-            datasetFrames = []
-            for frame, id in zip(framePaths, frameIds):
-                modulo = id % 4
-                if isTrain is True:
-                    if modulo == 0:
-                        tmpIds.append(id)
-                        datasetFrames.append(frame)    
-                else:
-                    if modulo > 0:
-                        tmpIds.append(id)
-                        datasetFrames.append(frame)       
-            frameIds = tmpIds            
-        for id, frame in zip(frameIds, datasetFrames):
-            self.add_image("AICity", image_id=id, path=frame, width=width, height=height)
+        id = 0
+        sequences = self.trainSequences if isTrain is True else self.testSequences
+        for sequence in sequences:
+            for camera in self.datasetStructure[sequence]:
+                for i, image in enumerate(AICityIterator(sequence, camera)):
+                    if i == 0:
+                        imgMat = cv2.imread(image)
+                        origHeight = imgMat.shape[0]
+                        origWidth = imgMat.shape[1]
+                    #Filter out frames without GT
+                    self.add_image("AICity",
+                                    image_id=id,
+                                    seq=sequence,
+                                    cam=camera,
+                                    frame=i+1,
+                                    path=image,
+                                    width=width,
+                                    height=height,
+                                    origHeight=origHeight,
+                                    origWidth=origWidth)
+                    id += 1
     
     def load_image(self, image_id):
         info = self.image_info[image_id]
@@ -69,7 +57,9 @@ class AICityDataset(utils.Dataset):
 
     def load_mask(self, image_id):
         info = self.image_info[image_id]
-        detections = self.groundTruth[info['id']]
+        origHeight = info['origHeight']
+        origWidth = info['origWidth']
+        detections = getGroundtruth(info['seq'], info['cam'], info['frame'])
         nDetections = len(detections)
         cls_ids = np.zeros(nDetections)
         mask = np.zeros([info['height'], info['width'], nDetections], dtype=np.uint8)
@@ -81,7 +71,7 @@ class AICityDataset(utils.Dataset):
             x1 = detection['left']
             y2 = detection['top'] + detection['height']
             x2 = detection['left'] + detection['width']
-            tmpMask = bbox2mask(y1, x1, y2, x2, self.origHeight, self.origWidth)
+            tmpMask = bbox2mask(y1, x1, y2, x2, origHeight, origWidth)
             tmpMask = cv2.resize(tmpMask, (info['height'], info['width']))
             mask[:,:,i] = tmpMask
         return mask.astype(np.bool), cls_ids.astype(np.int32)
