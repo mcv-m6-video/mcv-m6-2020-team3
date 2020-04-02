@@ -89,7 +89,7 @@ elif init_with == "last":
 # which layers to train by name pattern.
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
-            epochs=1,
+            epochs=10,
             layers='heads')
 
 # Fine tune all layers
@@ -143,21 +143,29 @@ ut.save_instances(original_image, r['rois'], r['masks'], r['class_ids'],
 APs = []
 print("Evaluating fine-tuned model")
 resultsPkl = []
+imagesWithGT = 0
 for image_id in tqdm(dataset_val.image_ids):
     #Load image and ground truth data
     image, image_meta, gt_class_id, gt_bbox, gt_mask = \
         modellib.load_image_gt(dataset_val, inference_config,
                                image_id, use_mini_mask=False)
     molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
-    #Run object detection
-    results = model.detect([image], verbose=0)
-    resultsPkl.append(results)
-    r = results[0]
-    #Compute AP
-    AP, precisions, recalls, overlaps = \
-        utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
-                         r["rois"], r["class_ids"], r["scores"], r['masks'])
-    APs.append(AP)
+    if len(gt_class_id) > 0:
+        #Run object detection
+        results = model.detect([image], verbose=0)
+        resultsPkl.append(results)
+        r = results[0]
+        imagesWithGT += 1
+        #Compute AP
+        AP, precisions, recalls, overlaps = \
+            utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
+                            r["rois"], r["class_ids"], r["scores"], r['masks'])
+        APs.append(AP)
+
+imagesWithoutGT = len(dataset_val.image_ids) - imagesWithGT
+
+print("Images with GT " + str(imagesWithGT))
+print("Images without GT " + str(imagesWithoutGT))
 
 print("Saving results to pickle")
 

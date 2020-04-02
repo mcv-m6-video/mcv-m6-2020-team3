@@ -38,6 +38,7 @@ class AICityDataset(utils.Dataset):
                         imgMat = cv2.imread(image)
                         origHeight = imgMat.shape[0]
                         origWidth = imgMat.shape[1]
+                    #Filter out frames without GT
                     self.add_image("AICity",
                                     image_id=id,
                                     seq=sequence,
