@@ -6,7 +6,8 @@ Note, frame starts from 1.
 
 import pickle
 from utils import addBboxesToFrames, calculate_mAP, bb_iou, addBboxesToFrames_gif, upscaleDetections, adjustBboxWithOpticalFlow
-from utils_tracking import read_tracking_annotations, compute_mAP_track, addTracksToFrames, addTracksToFrames_gif, compute_idf1
+from utils_tracking import read_tracking_annotations, compute_mAP_track, addTracksToFrames, addTracksToFrames_gif, calculate_idf1
+from AICityIterator import AICityIterator
 from tqdm import tqdm
 from track import Track
 import opt_flow as of
@@ -18,20 +19,19 @@ def detection_to_box(detection):
     return [detection['left'], detection['top'], detection['left']+detection['width'],
             detection['top']+detection['height']]
 
-def find_tracking(detections_all, video_length, missing_chance = 1, lou_max_threshold = 0.01, use_of=False, crop_center=False):
-    video_path = "./Datasets/AICity/frames/"
-    frameFiles = glob.glob(video_path + '/*.jpg')
-    frameFiles = sorted(frameFiles)
+def find_tracking(seq, cam, detections_all, video_length, missing_chance = 1, lou_max_threshold = 0.01, use_of=False, crop_center=False):
 
     tracks_update = []
     chance_left = []
     tracks_end = []
     track_num = 0
-    curr_frame = cv2.imread(frameFiles[0])
-    for i in tqdm(range(video_length)):
+    iterator = AICityIterator(seq, cam, video_length)
+
+    for i, imgPath in tqdm(enumerate(iterator), total=len(iterator)):
         frame_id = i+1
         detections_on_frame = [x for x in detections_all if x["frame"] == frame_id]
         if frame_id == 1:
+            curr_frame = cv2.imread(imgPath)
             for detection in detections_on_frame:
                 track_one = Track(track_num, [detection])
                 track_num = track_num + 1
@@ -39,7 +39,7 @@ def find_tracking(detections_all, video_length, missing_chance = 1, lou_max_thre
                 chance_left.append(missing_chance)
         else:
             prev_frame = curr_frame
-            curr_frame = cv2.imread(frameFiles[frame_id-1])
+            curr_frame = cv2.imread(imgPath)
             if use_of is True:
                 frameOF = of.farneback(prev_frame, curr_frame)
             # use end flag to record the update of old tracks
@@ -84,29 +84,28 @@ def find_tracking(detections_all, video_length, missing_chance = 1, lou_max_thre
     return tracks_end
 
 if __name__ == "__main__":
-    #detections_filename = "./detections/results_t12_first.pkl"
-    detections_filename = "./detections/results_t12_interleaved.pkl"
-    use_of = False if len(sys.argv) > 1 and sys.argv[1] == "-n" else True
-    crop_center = True if len(sys.argv) > 1 and sys.argv[1] == "-c" else False
+    use_of = False if "-n" in sys.argv else True
+    crop_center = True if "-c" in sys.argv else False
+
+    seq = sys.argv[1] if len(sys.argv) >= 3 else 'S03'
+    cam = sys.argv[2] if len(sys.argv) >= 3 else 'c010'
+
+    detections_filename = "./detections/detections_{}_{}.pkl".format(seq, cam)
     
-    video_length = 2141
-    #video_length = 500
-    video_path = "./Datasets/AICity/frames/"
-    groundtruth_xml_path = 'Datasets/AICity/aicity_annotations.xml'
+    video_length = len(AICityIterator(seq, cam))
 
     print("Reading pkl")
     with open(detections_filename, 'rb') as p:
         detections = pickle.load(p)
         p.close()
 
-    detections = upscaleDetections(detections)
+    #detections = upscaleDetections(detections)
 
     print("Reading annotations...")
-    read_annotations_flag = False
+    read_annotations_flag = True
     annotations_pkl_filename = "gt_annotations.pkl"
     if read_annotations_flag:
-        # groundTruth = read_annotations(groundtruth_xml_path, video_length)
-        groundTruth, tracks_gt_list = read_tracking_annotations(groundtruth_xml_path, video_length)
+        groundTruth, tracks_gt_list = read_tracking_annotations(seq, cam, video_length)
         with open(annotations_pkl_filename, 'wb') as f:
             pickle.dump([groundTruth, tracks_gt_list], f)
             f.close()
@@ -116,7 +115,6 @@ if __name__ == "__main__":
             groundTruth, tracks_gt_list = pickle.load(p)
             p.close()
 
-    #addBboxesToFrames_gif(video_path, detections, groundTruth, start_frame=210, end_frame=260, name="test")
 
     # sort detections because detections is sort by confidence while calculating map.
     detections.sort(key=lambda x: x['frame'])
@@ -129,22 +127,16 @@ if __name__ == "__main__":
     result_list = []
     for missing_chance in missing_chance_list:
         for lou_max_threshold in lou_max_threshold_list:
-            detections_tracks = find_tracking(detections, video_length, missing_chance=missing_chance,
+            detections_tracks = find_tracking(seq, cam, detections, video_length, missing_chance=missing_chance,
                                               lou_max_threshold=lou_max_threshold, use_of=use_of, crop_center=crop_center)
-            with open("track_gt_de.pkl", 'wb') as f:
-                pickle.dump([tracks_gt_list, detections_tracks, video_length], f)
-                f.close()
             mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
             print("Missing chance: " + str(missing_chance))
             print("IoU max thr: " + str(lou_max_threshold))
             print("mAP_track = ", mAP_track)
-            result_list.append([missing_chance, lou_max_threshold, mAP_track])
-    print(result_list)
+        for track_one in detections_tracks:
+            track_one.detections.sort(key=lambda x: x['frame'])
 
-    for track_one in detections_tracks:
-        track_one.detections.sort(key=lambda x: x['frame'])
-
-    compute_idf1(tracks_gt_list, detections_tracks, video_length)
+        calculate_idf1(groundTruth, detections_tracks, video_length)
 
 
 
