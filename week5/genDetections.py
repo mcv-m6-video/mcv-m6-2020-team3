@@ -13,6 +13,7 @@ from tqdm import tqdm
 from AICityConfig import AICityConfig
 from AICityDataset import AICityDataset
 from AICityIterator import AICityIterator
+from AICityIterator import getStructure
 # Root directory of the project
 ROOT_DIR = os.path.abspath("./Mask_RCNN")
 
@@ -89,7 +90,7 @@ elif init_with == "last":
 # which layers to train by name pattern.
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
-            epochs=10,
+            epochs=20,
             layers='heads')
 
 # Fine tune all layers
@@ -137,61 +138,36 @@ r = results[0]
 ut.save_instances(original_image, r['rois'], r['masks'], r['class_ids'],
                         dataset_val.class_names, r['scores'], ax=get_ax(), imName='pred_' + str(image_id_predict) + '.png')
 
-# Compute VOC-Style mAP @ IoU=0.5
-# Running on 10 images. Increase for better accuracy.
-#image_ids = np.random.choice(dataset_val.image_ids, 100)
-APs = []
-print("Evaluating fine-tuned model")
-resultsPkl = []
-imagesWithGT = 0
-for image_id in tqdm(dataset_val.image_ids):
-    #Load image and ground truth data
-    image, image_meta, gt_class_id, gt_bbox, gt_mask = \
-        modellib.load_image_gt(dataset_val, inference_config,
-                               image_id, use_mini_mask=False)
-    molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
-    if len(gt_class_id) > 0:
-        #Run object detection
-        results = model.detect([image], verbose=0)
-        resultsPkl.append(results)
-        r = results[0]
-        imagesWithGT += 1
-        #Compute AP
-        AP, precisions, recalls, overlaps = \
-            utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
-                            r["rois"], r["class_ids"], r["scores"], r['masks'])
-        APs.append(AP)
+testingSequences = ['S03']
 
-imagesWithoutGT = len(dataset_val.image_ids) - imagesWithGT
+AICityStructure = getStructure()
 
-print("Images with GT " + str(imagesWithGT))
-print("Images without GT " + str(imagesWithoutGT))
+for seq in testingSequences:
+    for cam in AICityStructure[seq]:
+        iterator = AICityIterator(seq, cam)
+        pklList = []
+        for i, imgPath in tqdm(enumerate(iterator), total=len(iterator)):
+            image = cv2.imread(imgPath)
+            results = model.detect([image], verbose=0)
+            r = results[0]
+            class_id = r['class_ids']
+            boxes = r['rois']
+            confidence = r['scores']
+            for j in range(class_id.shape[0]):
+                if class_id[j] == 1:
+                    bbox = boxes[j, :]
+                    detection = {}
+                    box_h = bbox[2] - bbox[0]
+                    box_w = bbox[3] - bbox[1]
+                    detection['frame'] = i + 1
+                    detection['left'] = bbox[1]
+                    detection['top'] = bbox[0]
+                    detection['width'] = box_w
+                    detection['height'] = box_h
+                    detection['confidence'] = confidence[j]
+                    pklList.append(detection)
 
-print("Saving results to pickle")
+        with open('detections/detections_{}_{}.pkl'.format(seq, cam), "wb") as f:
+            pickle.dump(pklList, f)
 
-detections = []
-for i, result in tqdm(enumerate(resultsPkl), total=len(resultsPkl)):
-    r = result[0]
-    class_id = r['class_ids']
-    # print (class_id)
-    boxes = r['rois']
-    confidence = r['scores']
-    for j in range(class_id.shape[0]):
-        if class_id[j] == 1:
-            bbox = boxes[j, :]
-            detection = {}
-            box_h = bbox[2] - bbox[0]
-            box_w = bbox[3] - bbox[1]
-            detection['frame'] = dataset_val.image_info[i]['id']
-            detection['left'] = bbox[1]
-            detection['top'] = bbox[0]
-            detection['width'] = box_w
-            detection['height'] = box_h
-            detection['confidence'] = confidence[j]
-            detections.append(detection)
-
-with open('detections.pkl', "wb") as f:
-    pickle.dump(detections, f)
-
-print("mAP: ", np.mean(APs))
 print("Images with GT and predictions in gt_" + str(image_id_predict) + ".png and pred_" + str(image_id_predict) + ".png")
