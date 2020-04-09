@@ -8,6 +8,8 @@ import cv2
 import imageio
 import motmetrics as mm
 import pickle
+from AICityIterator import AICityIterator
+from AICityGroundtruth import getGroundtruth
 
 
 def compute_mAP_track(groundtruth_tracks, detections_tracks, IoU_threshold=0.5, verbose = False):
@@ -167,6 +169,7 @@ def calculate_idf1(gt, detections_tracks, video_length, IoU_threshold=0.5, verbo
     print(summary)
 
 
+
 def tracking_filter(detections_tracks):
     detections_tracks_filtered = []
     for track_one in detections_tracks:
@@ -182,6 +185,24 @@ def tracking_filter(detections_tracks):
             if np.linalg.norm(vec1-vec2) > 100:
                 detections_tracks_filtered.append(track_one)
     return detections_tracks_filtered
+
+def read_tracking_annotations(seq, cam, video_length=None):
+    tracks = {}
+    groundtruthList = []
+    tracksGtList = []
+    iterator = AICityIterator(seq, cam, video_length)
+    for i, _ in tqdm(enumerate(iterator), total=len(iterator)):
+        gt = getGroundtruth(seq, cam, i+1)
+        for item in gt:
+            groundtruthList.append(item)
+            if item['ID'] not in tracks.keys():
+                tracks[item['ID']] = Track(item['ID'], [item])
+            else:
+                tracks[item['ID']].addDetection(item)
+    for id in sorted(tracks.keys()):
+        tracksGtList.append(tracks[id])
+    return groundtruthList, tracksGtList
+
 
 if __name__ == "__main__":
     pass

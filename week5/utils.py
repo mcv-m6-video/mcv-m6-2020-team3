@@ -43,6 +43,7 @@ def getDictFromDetection(detectionStr, isGT=False):
     detectionDict['top'] = int(float(detectionList[3]))
     detectionDict['width'] = int(float(detectionList[4]))
     detectionDict['height'] = int(float(detectionList[5]))
+    detectionDict['ID'] = int(detectionList[1])
     if isGT is not True:
         detectionDict['confidence'] = float(detectionList[6])
     return detectionDict
@@ -794,7 +795,6 @@ def save_instances(image, boxes, masks, class_ids, class_names,
         y1, x1, y2, x2 = boxes[i]
         if show_bbox:
             p = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2,
-
                                 alpha=0.7, linestyle="dashed",
                                 edgecolor=color, facecolor='none')
             ax.add_patch(p)

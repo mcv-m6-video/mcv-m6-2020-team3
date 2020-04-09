@@ -38,18 +38,19 @@ class AICityDataset(utils.Dataset):
                         imgMat = cv2.imread(image)
                         origHeight = imgMat.shape[0]
                         origWidth = imgMat.shape[1]
-                    #Filter out frames without GT
-                    self.add_image("AICity",
-                                    image_id=id,
-                                    seq=sequence,
-                                    cam=camera,
-                                    frame=i+1,
-                                    path=image,
-                                    width=width,
-                                    height=height,
-                                    origHeight=origHeight,
-                                    origWidth=origWidth)
-                    id += 1
+                    #Only add data with GT to the datasets
+                    if len(getGroundtruth(sequence, camera, i+1)) > 0:
+                        self.add_image("AICity",
+                                        image_id=id,
+                                        seq=sequence,
+                                        cam=camera,
+                                        frame=i+1,
+                                        path=image,
+                                        width=width,
+                                        height=height,
+                                        origHeight=origHeight,
+                                        origWidth=origWidth)
+                        id += 1
     
     def load_image(self, image_id):
         info = self.image_info[image_id]
