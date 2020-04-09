@@ -32,9 +32,10 @@ class AICityIterator:
         return self
 
     def __next__(self):
-        self.currItem += 1
         if self.currItem < self.limit:
-            return self.frameFiles[self.currItem]
+            img = self.frameFiles[self.currItem]
+            self.currItem += 1
+            return img
         raise StopIteration
 
     def __len__(self):
