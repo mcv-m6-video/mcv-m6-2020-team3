@@ -6,7 +6,7 @@ Note, frame starts from 1.
 
 import pickle
 from utils import addBboxesToFrames, calculate_mAP, bb_iou, addBboxesToFrames_gif, upscaleDetections, adjustBboxWithOpticalFlow
-from utils_tracking import read_tracking_annotations, compute_mAP_track, addTracksToFrames, addTracksToFrames_gif, calculate_idf1
+from utils_tracking import read_tracking_annotations, compute_mAP_track, addTracksToFrames, addTracksToFrames_gif, calculate_idf1, tracking_filter
 from AICityIterator import AICityIterator
 from tqdm import tqdm
 from track import Track
@@ -86,6 +86,7 @@ def find_tracking(seq, cam, detections_all, video_length, missing_chance = 1, lo
 if __name__ == "__main__":
     use_of = False if "-n" in sys.argv else True
     crop_center = True if "-c" in sys.argv else False
+    filterStatic = True if "-f" in sys.argv else False
 
     seq = sys.argv[1] if len(sys.argv) >= 3 else 'S03'
     cam = sys.argv[2] if len(sys.argv) >= 3 else 'c010'
@@ -102,24 +103,11 @@ if __name__ == "__main__":
     #detections = upscaleDetections(detections)
 
     print("Reading annotations...")
-    read_annotations_flag = True
-    annotations_pkl_filename = "gt_annotations.pkl"
-    if read_annotations_flag:
-        groundTruth, tracks_gt_list = read_tracking_annotations(seq, cam, video_length)
-        with open(annotations_pkl_filename, 'wb') as f:
-            pickle.dump([groundTruth, tracks_gt_list], f)
-            f.close()
-    else:
-        print("Reading pkl")
-        with open(annotations_pkl_filename, 'rb') as p:
-            groundTruth, tracks_gt_list = pickle.load(p)
-            p.close()
-
+    groundTruth, tracks_gt_list = read_tracking_annotations(seq, cam, video_length)
 
     # sort detections because detections is sort by confidence while calculating map.
     detections.sort(key=lambda x: x['frame'])
 
-    # detections_tracks = find_tracking(detections, video_length, missing_chance=1, lou_max_threshold=0.01)
     missing_chance_list = [3, 5, 7]
     lou_max_threshold_list = [0.3, 0.5, 0.7]
     missing_chance_list = [3]
@@ -129,6 +117,8 @@ if __name__ == "__main__":
         for lou_max_threshold in lou_max_threshold_list:
             detections_tracks = find_tracking(seq, cam, detections, video_length, missing_chance=missing_chance,
                                               lou_max_threshold=lou_max_threshold, use_of=use_of, crop_center=crop_center)
+            if filterStatic is True:
+                detections_tracks = tracking_filter(detections_tracks)
             mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
             print("Missing chance: " + str(missing_chance))
             print("IoU max thr: " + str(lou_max_threshold))
