@@ -90,7 +90,10 @@ def addTracksToFrames(framesPath, detections_tracks, tracks_gt_list, start_frame
     :param name: name of video.
     :return: None
     """
-    size = (1920, 1080)
+    # size = (1920, 1080)
+    filename = "{}{}.jpg".format(framesPath, str(start_frame).zfill(5))
+    frame_size = cv2.imread(filename).shape
+    size = (frame_size[1], frame_size[0])
     fps = 10
     out = cv2.VideoWriter(name + '.avi', cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
 
