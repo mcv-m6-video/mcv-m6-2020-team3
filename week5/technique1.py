@@ -19,8 +19,15 @@ if __name__ == "__main__":
         detections_all_camera = pickle.load(p)
         p.close()
 
-    camera = 'c010'
     camera_list = ['c010', 'c011', 'c012', 'c013', 'c014', 'c015']
+    video_length_list = {
+        'c010': 2141,
+        'c011': 2279,
+        'c012': 2422,
+        'c013': 2415,
+        'c014': 2332,
+        'c015': 1928}
+
     for camera in camera_list:
         print(camera)
 
@@ -40,7 +47,7 @@ if __name__ == "__main__":
         detections.sort(key=lambda x: x['frame'])
 
         #calculate video_length
-        video_length = detections[-1]['frame'] - detections[0]['frame'] + 1
+        video_length = video_length_list[camera]
 
         missing_chance = 5
         lou_max_threshold = 0.5
@@ -49,7 +56,7 @@ if __name__ == "__main__":
                                                           lou_max_threshold=lou_max_threshold)
 
         # filter the track
-        # detections_tracks = tracking_filter(detections_tracks)
+        detections_tracks = tracking_filter(detections_tracks)
 
         # mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
         # print("mAP_track = ", mAP_track)
@@ -59,8 +66,8 @@ if __name__ == "__main__":
         for track_one in detections_tracks:
             track_one.detections.sort(key=lambda x: x['frame'])
 
-        # addTracksToFrames('{}{}/frames/'.format(test_path, camera), detections_tracks, tracks_gt_list,
-        #                   start_frame=1, end_frame=video_length, name="test_track")
+        addTracksToFrames('{}{}/frames/'.format(test_path, camera), detections_tracks, tracks_gt_list,
+                          start_frame=1, end_frame=video_length, name="test_track"+camera)
         # addTracksToFrames_gif(video_path, detections_tracks, tracks_gt_list, start_frame=210, end_frame=390, name="test")
 
 
