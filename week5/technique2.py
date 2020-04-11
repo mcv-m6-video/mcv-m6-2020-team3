@@ -7,7 +7,7 @@ Note, frame starts from 1.
 import pickle
 from utils import addBboxesToFrames, calculate_mAP, bb_iou, addBboxesToFrames_gif, upscaleDetections, adjustBboxWithOpticalFlow
 from utils_tracking import read_tracking_annotations, compute_mAP_track, addTracksToFrames, addTracksToFrames_gif, calculate_idf1, tracking_filter
-from AICityIterator import AICityIterator
+from AICityIterator import AICityIterator, getStructure
 from tqdm import tqdm
 from track import Track
 import opt_flow as of
@@ -87,11 +87,12 @@ if __name__ == "__main__":
     use_of = False if "-n" in sys.argv else True
     crop_center = True if "-c" in sys.argv else False
     filterStatic = True if "-f" in sys.argv else False
+    isFasterRCNN = "_frcnn" if "-frcnn" in sys.argv else ""
 
     seq = sys.argv[1] if len(sys.argv) >= 3 else 'S03'
     cam = sys.argv[2] if len(sys.argv) >= 3 else 'c010'
 
-    detections_filename = "./detections/detections_{}_{}.pkl".format(seq, cam)
+    detections_filename = "./detections/detections{}_{}_{}.pkl".format(isFasterRCNN, seq, cam)
     
     video_length = len(AICityIterator(seq, cam))
 
@@ -100,33 +101,40 @@ if __name__ == "__main__":
         detections = pickle.load(p)
         p.close()
 
-    #detections = upscaleDetections(detections)
-
     print("Reading annotations...")
     groundTruth, tracks_gt_list = read_tracking_annotations(seq, cam, video_length)
 
     # sort detections because detections is sort by confidence while calculating map.
     detections.sort(key=lambda x: x['frame'])
 
-    missing_chance_list = [3, 5, 7]
-    lou_max_threshold_list = [0.3, 0.5, 0.7]
+    #Best parameters
+    frameDistanceList = [10, 5] if filterStatic else [5]
+    trackLenList = [100, 1000] if filterStatic else [5]
     missing_chance_list = [3]
     lou_max_threshold_list = [0.3]
-    result_list = []
     for missing_chance in missing_chance_list:
         for lou_max_threshold in lou_max_threshold_list:
             detections_tracks = find_tracking(seq, cam, detections, video_length, missing_chance=missing_chance,
                                               lou_max_threshold=lou_max_threshold, use_of=use_of, crop_center=crop_center)
             if filterStatic is True:
-                detections_tracks = tracking_filter(detections_tracks)
-            mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
-            print("Missing chance: " + str(missing_chance))
-            print("IoU max thr: " + str(lou_max_threshold))
-            print("mAP_track = ", mAP_track)
-        for track_one in detections_tracks:
-            track_one.detections.sort(key=lambda x: x['frame'])
+                orig_tracks = detections_tracks
+            for frameDistance, trackLen in zip(frameDistanceList, trackLenList):
+                if filterStatic is True:
+                    print("Length of detections pre-filter: ", len(orig_tracks))
+                    detections_tracks = tracking_filter(orig_tracks, frameDistance, trackLen)
+                mAP_track = compute_mAP_track(tracks_gt_list, detections_tracks, IoU_threshold=0.5)
+                print("Missing chance: " + str(missing_chance))
+                print("IoU max thr: " + str(lou_max_threshold))
+                print("mAP_track = ", mAP_track)
+                if filterStatic is True:
+                    print("Frame diff: ", frameDistance)
+                    print("Minimum track duration: ", trackLen)
+                for track_one in detections_tracks:
+                    track_one.detections.sort(key=lambda x: x['frame'])
 
-        calculate_idf1(groundTruth, detections_tracks, video_length)
+                print("Length of detections post-filter: ", len(detections_tracks))
+
+                calculate_idf1(groundTruth, detections_tracks, video_length)
 
 
 

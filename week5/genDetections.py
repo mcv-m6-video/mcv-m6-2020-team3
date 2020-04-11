@@ -69,7 +69,7 @@ model = modellib.MaskRCNN(mode="training", config=config,
                           model_dir=MODEL_DIR)
 
 # Which weights to start with?
-init_with = "coco"  # imagenet, coco, or last
+init_with = "last"  # imagenet, coco, or last
 
 if init_with == "imagenet":
     model.load_weights(model.get_imagenet_weights(), by_name=True)
@@ -88,16 +88,16 @@ elif init_with == "last":
 # Passing layers="heads" freezes all layers except the head
 # layers. You can also pass a regular expression to select
 # which layers to train by name pattern.
-model.train(dataset_train, dataset_val,
+"""model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
-            epochs=20,
-            layers='heads')
+            epochs=100,
+            layers='heads')"""
 
 # Fine tune all layers
 # Passing layers="all" trains all layers. You can also
 # pass a regular expression to select which layers to
 # train by name pattern.
-#model.train(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE / 10, epochs=2, layers="all")
+model.train(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE / 10, epochs=40, layers="all")
 
 inference_config = InferenceConfig()
 
@@ -127,16 +127,16 @@ log("gt_class_id", gt_class_id)
 log("gt_bbox", gt_bbox)
 log("gt_mask", gt_mask)
 
-ut.save_instances(original_image, gt_bbox, gt_mask, gt_class_id,
-                    dataset_train.class_names, figsize=(8, 8), imName='gt_' + str(image_id_predict) + '.png')
+"""ut.save_instances(original_image, gt_bbox, gt_mask, gt_class_id,
+                    dataset_train.class_names, figsize=(8, 8), imName='gt_' + str(image_id_predict) + '.png')"""
 
 
 results = model.detect([original_image], verbose=1)
 
 r = results[0]
 
-ut.save_instances(original_image, r['rois'], r['masks'], r['class_ids'],
-                        dataset_val.class_names, r['scores'], ax=get_ax(), imName='pred_' + str(image_id_predict) + '.png')
+"""ut.save_instances(original_image, r['rois'], r['masks'], r['class_ids'],
+                        dataset_val.class_names, r['scores'], ax=get_ax(), imName='pred_' + str(image_id_predict) + '.png')"""
 
 testingSequences = ['S03']
 
@@ -167,7 +167,5 @@ for seq in testingSequences:
                     detection['confidence'] = confidence[j]
                     pklList.append(detection)
 
-        with open('detections/detections_{}_{}.pkl'.format(seq, cam), "wb") as f:
+        with open('detections/detections_fullTrain_{}_{}.pkl'.format(seq, cam), "wb") as f:
             pickle.dump(pklList, f)
-
-print("Images with GT and predictions in gt_" + str(image_id_predict) + ".png and pred_" + str(image_id_predict) + ".png")
