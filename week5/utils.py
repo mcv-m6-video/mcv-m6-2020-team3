@@ -539,7 +539,7 @@ def calculate_mAP(groundtruth_list_original, detections_list_original, IoU_thres
                 precision_step[j] = max_precision_i
             else:
                 break
-    if verbose:
+    if False:
         plt.figure(1)
 
         plt.plot(recall, precision,'r--')
@@ -696,13 +696,17 @@ def morphological_filtering(mask):
     return mask_fill
 
 def chage_color_space(frame, space):
+    if space == 'gray':
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     if space == 'hsv':
         frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
     if space == 'lab':
         frame = cv.cvtColor(frame, cv.COLOR_BGR2Lab)
     if space == 'luv':
         frame = cv.cvtColor(frame, cv.COLOR_BGR2Luv)
-        return frame
+    if space == 'yuv':
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2YUV)
+    return frame
 
 
 def addBboxesToFrames_gif(framesPath, detections, groundTruth, start_frame, end_frame, name):
