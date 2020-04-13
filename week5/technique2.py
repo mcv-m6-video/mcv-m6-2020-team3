@@ -107,6 +107,7 @@ if __name__ == "__main__":
     # sort detections because detections is sort by confidence while calculating map.
     detections.sort(key=lambda x: x['frame'])
 
+    baseDatasetPath = 'Datasets/AIC20_track3/train/'
     #Best parameters
     frameDistanceList = [10, 5] if filterStatic else [5]
     trackLenList = [100, 1000] if filterStatic else [5]
@@ -135,6 +136,8 @@ if __name__ == "__main__":
                 print("Length of detections post-filter: ", len(detections_tracks))
 
                 calculate_idf1(groundTruth, detections_tracks, video_length)
+                addTracksToFrames(baseDatasetPath + '{}/{}/frames/'.format(seq, cam), detections_tracks, tracks_gt_list,
+                          start_frame=1, end_frame=video_length, name="test_track_{}_{}_{}".format(seq, cam, frameDistance))
 
 
 
