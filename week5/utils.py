@@ -846,6 +846,7 @@ def adjustBboxWithOpticalFlow(bbox, opticalFlow, crop_center):
     # Keep in mind bbox might go out of bounds, need to take that into account
     reduction_h = 0
     reduction_v = 0
+    bbox = [int(item) for item in bbox]
     if crop_center is True:
         #Compute mean OF only on 2/3 of width and height, as area further from the center of bbox is probably static
         height = bbox[3]-bbox[1]

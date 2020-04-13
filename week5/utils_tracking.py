@@ -90,7 +90,10 @@ def addTracksToFrames(framesPath, detections_tracks, tracks_gt_list, start_frame
     :param name: name of video.
     :return: None
     """
-    size = (1920, 1080)
+    # size = (1920, 1080)
+    filename = "{}{}.jpg".format(framesPath, str(start_frame).zfill(5))
+    frame_size = cv2.imread(filename).shape
+    size = (frame_size[1], frame_size[0])
     fps = 10
     out = cv2.VideoWriter(name + '.avi', cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
 
@@ -170,7 +173,7 @@ def calculate_idf1(gt, detections_tracks, video_length, IoU_threshold=0.5, verbo
 
 
 
-def tracking_filter(detections_tracks):
+def tracking_filter(detections_tracks, frameDistance=10, trackLength=100):
     detections_tracks_filtered = []
     for track_one in detections_tracks:
         detection_first = track_one.detections[0]
@@ -181,8 +184,8 @@ def tracking_filter(detections_tracks):
         Y_2 = detection_last['top'] + 0.5 * detection_last['height']
         vec1 = np.array([X_1, Y_1])
         vec2 = np.array([X_2, Y_2])
-        if (detection_last['frame']-detection_first['frame']) > 10:
-            if np.linalg.norm(vec1-vec2) > 100:
+        if (detection_last['frame']-detection_first['frame']) > frameDistance:
+            if np.linalg.norm(vec1-vec2) > trackLength:
                 detections_tracks_filtered.append(track_one)
     return detections_tracks_filtered
 
