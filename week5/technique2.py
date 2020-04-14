@@ -138,6 +138,10 @@ if __name__ == "__main__":
                 calculate_idf1(groundTruth, detections_tracks, video_length)
                 addTracksToFrames(baseDatasetPath + '{}/{}/frames/'.format(seq, cam), detections_tracks, tracks_gt_list,
                           start_frame=1, end_frame=video_length, name="test_track_{}_{}_{}".format(seq, cam, frameDistance))
+                with open('detections/tracks_{}_{}_{}.pkl'.format(seq, cam, frameDistance), "wb") as f:
+                    pickle.dump(detections_tracks, f)
+    with open('detections/gt_tracks_{}_{}.pkl'.format(seq, cam), "wb") as f:
+        pickle.dump(groundTruth, f)
 
 
 
