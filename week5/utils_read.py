@@ -38,6 +38,24 @@ def transform_gt(gt):
             tracks_all.append(track_one)
     return tracks_all
 
+def transform_det(bb_id_updated):
+    tracks_all = []
+    for instance in bb_id_updated:
+        flag_not_allocated = True
+        for track in tracks_all:
+            if track.id == instance['ID']:
+                flag_not_allocated = False
+                detection = detection_is_dictionary(instance['frame'], instance['left'], instance['top'],
+                                                    instance['width'], instance['height'],
+                                                    confidence=instance['confidence'])
+                track.detections.append(detection)
+        if flag_not_allocated:
+            detection = detection_is_dictionary(instance['frame'], instance['left'], instance['top'],
+                                                instance['width'], instance['height'],
+                                                confidence=instance['confidence'])
+            track_one = Track(instance['ID'], [detection])
+            tracks_all.append(track_one)
+    return tracks_all
 
 def detection_is_dictionary(frame_id, left, top, width, height, confidence = 1.0):
     detection = {}
