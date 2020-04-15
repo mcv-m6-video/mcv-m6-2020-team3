@@ -15,7 +15,7 @@ from AICityDataset import AICityDataset
 from AICityIterator import AICityIterator
 from AICityIterator import getStructure
 # Root directory of the project
-ROOT_DIR = os.path.abspath("./Mask_RCNN")
+ROOT_DIR = os.path.abspath("../Mask_RCNN")
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
