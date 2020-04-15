@@ -41,6 +41,7 @@ if __name__ == "__main__":
         'c015': 1928}
 
     idf1_list = []
+    detections_tracks_all_camera = {}
     for camera in camera_list:
         print(camera)
 
@@ -89,10 +90,13 @@ if __name__ == "__main__":
         for track_one in detections_tracks:
             track_one.detections.sort(key=lambda x: x['frame'])
 
-        addTracksToFrames('{}{}/frames/'.format(test_path, camera), detections_tracks, tracks_gt_list,
-                          start_frame=1, end_frame=video_length, name="test_track"+camera)
+        # addTracksToFrames('{}{}/frames/'.format(test_path, camera), detections_tracks, tracks_gt_list,
+        #                   start_frame=1, end_frame=video_length, name="test_track"+camera)
         # addTracksToFrames_gif(video_path, detections_tracks, tracks_gt_list, start_frame=210, end_frame=390, name="test")
 
+        detections_tracks_all_camera[camera] = detections_tracks
     print(idf1_list)
-
+    with open("detections_tracks_all_camera.pkl", 'wb') as f:
+        pickle.dump(detections_tracks_all_camera, f)
+        f.close()
 
