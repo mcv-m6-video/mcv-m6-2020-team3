@@ -6,19 +6,27 @@
 ## Abstract
 ### Week 1 Implementing dataset and evaluation metrics
 This week we implemented the evaluation metrics(Intersection over Union (IoU) and mean Average Precision (mAP)) that have been used in all tasks again.
+![image](https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/w1t_1_1.png)
+![image](https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/w1t1_1_2.png)
 
 ### Week 2 Object detection with Gaussian model
 The main task is to use Gaussian models to model the background pixels of the video sequence to classify them as background / foreground.
+![image](https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/bboxes_adaptive.gif)
 
 ### Week 3 Object Detection and Object Tracking
 Object Detection Mask-RCNN framework with ResNet-101 as the backbone
+![image](https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/mrcnn.gif)
+![image](https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/frcnn.gif)
 
 ### Week 4 Optical Flow and Video Stabilization
-
+Optical Flow
+![image](https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/test.gif)
+Video Stabilization
+![image](https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/image.gif)
 
 ### Week 5
-
-
+[Slides of week5](https://docs.google.com/presentation/d/1VasprYLcgt9CrHsns_UD0mKGjKkKP6lzKt5dVO2Eym0/edit#slide=id.g73a990f4fc_3_455)
+[Report]()
 
 # mcv-m6-2020-team3
 Team 3
