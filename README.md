@@ -6,8 +6,8 @@
 ## Abstract
 ### Week 1 Implementing dataset and evaluation metrics
 This week we implemented the evaluation metrics(Intersection over Union (IoU) and mean Average Precision (mAP)) that have been used in all tasks again.  
-![IoU with noise DB ](<img width="150" height="150" src="https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/w1t_1_1.png"/>)
-![mAP with noise DB ](<img width="150" height="150" src="https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/w1t1_1_2.png"/>)
+![IoU with noise DB ](https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/w1t_1_1.png)
+![mAP with noise DB ]<img width="150" height="150" src="https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/w1t1_1_2.png"/>
 
 ### Week 2 Object detection with Gaussian model
 The main task is to use Gaussian models to model the background pixels of the video sequence to classify them as background / foreground.  
