@@ -11,8 +11,10 @@ This week we implemented the evaluation metrics(Intersection over Union (IoU) an
 The main task is to use Gaussian models to model the background pixels of the video sequence to classify them as background / foreground.
 
 ### Week 3 Object Detection and Object Tracking
+Object Detection Mask-RCNN framework with ResNet-101 as the backbone
 
 ### Week 4 Optical Flow and Video Stabilization
+
 
 ### Week 5
 
