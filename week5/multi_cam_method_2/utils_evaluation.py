@@ -29,3 +29,4 @@ def compute_idf1(groundtruth_tracks, detections_tracks, video_length):
     mh = mm.metrics.create()
     summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
     print(summary)
+    print(summary.idf1, summary.idp, summary.precision, summary.recall, summary.mota, summary.motp)
