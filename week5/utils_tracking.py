@@ -122,7 +122,7 @@ def addTracksToFrames_gif(framesPath, detections_tracks, tracks_gt_list, start_f
     for frame_id in tqdm(range(start_frame, end_frame)):
         filename = "{}{}.jpg".format(framesPath, str(frame_id).zfill(5))
         frameMat = cv2.imread(filename)
-        color_detection = (0, 0, 255)
+        color_detection = (0, 255, 255)
         write_one_frame(detections_tracks, frame_id, frameMat, color_detection)
         color_gt = (255, 0, 0)
         write_one_frame(tracks_gt_list, frame_id, frameMat, color_gt)
@@ -168,7 +168,8 @@ def calculate_idf1(gt, detections_tracks, video_length, IoU_threshold=0.5, verbo
 
     print(acc.mot_events)
     mh = mm.metrics.create()
-    summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
+    #summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
+    summary = mh.compute(acc, metrics=['num_frames', 'idf1', 'idp', 'idr', 'motp', 'mota', 'precision', 'recall'], name='acc')
     print(summary)
 
     return summary.idf1.acc

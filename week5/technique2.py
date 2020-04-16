@@ -109,8 +109,8 @@ if __name__ == "__main__":
 
     baseDatasetPath = 'Datasets/AIC20_track3/train/'
     #Best parameters
-    frameDistanceList = [10, 5] if filterStatic else [5]
-    trackLenList = [100, 1000] if filterStatic else [5]
+    frameDistanceList = [10, 5] if filterStatic else ["noFilter"]
+    trackLenList = [100, 1000] if filterStatic else ["noFilter"]
     missing_chance_list = [3]
     lou_max_threshold_list = [0.3]
     for missing_chance in missing_chance_list:
@@ -136,12 +136,10 @@ if __name__ == "__main__":
                 print("Length of detections post-filter: ", len(detections_tracks))
 
                 calculate_idf1(groundTruth, detections_tracks, video_length)
-                addTracksToFrames(baseDatasetPath + '{}/{}/frames/'.format(seq, cam), detections_tracks, tracks_gt_list,
-                          start_frame=1, end_frame=video_length, name="test_track_{}_{}_{}".format(seq, cam, frameDistance))
+                #addTracksToFrames(baseDatasetPath + '{}/{}/frames/'.format(seq, cam), detections_tracks, tracks_gt_list,
+                        #start_frame=1, end_frame=video_length, name="test_track_{}_{}_{}".format(seq, cam, frameDistance))
                 with open('detections/tracks_{}_{}_{}.pkl'.format(seq, cam, frameDistance), "wb") as f:
                     pickle.dump(detections_tracks, f)
-    with open('detections/gt_tracks_{}_{}.pkl'.format(seq, cam), "wb") as f:
-        pickle.dump(groundTruth, f)
 
 
 
