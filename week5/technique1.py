@@ -42,6 +42,7 @@ if __name__ == "__main__":
 
     idf1_list = []
     detections_tracks_all_camera = {}
+    gt_tracks_all_camera = {}
     for camera in camera_list:
         print(camera)
 
@@ -95,8 +96,11 @@ if __name__ == "__main__":
         # addTracksToFrames_gif(video_path, detections_tracks, tracks_gt_list, start_frame=210, end_frame=390, name="test")
 
         detections_tracks_all_camera[camera] = detections_tracks
+        gt_tracks_all_camera[camera] = tracks_gt_list
     print(idf1_list)
     with open("detections_tracks_all_camera.pkl", 'wb') as f:
         pickle.dump(detections_tracks_all_camera, f)
         f.close()
-
+    with open("gt_tracks_all_camera.pkl", 'wb') as f:
+        pickle.dump(gt_tracks_all_camera, f)
+        f.close()

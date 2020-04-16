@@ -1,6 +1,6 @@
 
 from utils_io import load_from_dataset
-from features import compute_mr_histogram
+
 import cv2
 from metric_learn import NCA
 import numpy as np
@@ -10,7 +10,7 @@ import pickle
 import random
 
 
-def train_metric():
+def train_metric(feature_function):
     datasetStructure = {
         'S01': ['c001', 'c002', 'c003', 'c004', 'c005'],
         'S03': ['c010', 'c011', 'c012', 'c013', 'c014', 'c015'],
@@ -40,7 +40,7 @@ def train_metric():
                 # cv2.imshow("Image", cropped)
                 # cv2.waitKey(0)
                 # cv2.destroyAllWindows()
-                feature = compute_mr_histogram(cropped, splits=(3, 3), bins=32, mask=None, sqrt=False, concat=True)
+                feature = feature_function(cropped)
                 ID = obj["ID"]
                 features.append(feature)
                 labels.append(ID)
@@ -74,9 +74,9 @@ def train_metric():
 
     return nca
 
-pairs = np.zeros((1,2,864))
-pairs[0,0,:] = features[0]
-pairs[0,1,:] = features[1]
-nca.score_pairs(pairs)
-
-pass
+# pairs = np.zeros((1,2,864))
+# pairs[0,0,:] = features[0]
+# pairs[0,1,:] = features[1]
+# nca.score_pairs(pairs)
+#
+# pass
