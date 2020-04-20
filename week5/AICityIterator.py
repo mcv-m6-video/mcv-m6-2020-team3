@@ -42,7 +42,10 @@ class AICityIterator:
         raise StopIteration
 
     def __len__(self):
-        return len(self.frameFiles)  
+        return len(self.frameFiles)
+
+    def toList(self):
+        return self.frameFiles
 
 def getStructure():
     datasetStructure = {
