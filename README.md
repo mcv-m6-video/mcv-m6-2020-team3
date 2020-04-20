@@ -23,7 +23,7 @@ Object Detection Mask-RCNN framework with ResNet-101 as the backbone
 [Video Stabilization]<img width="150" height="150" src="https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/image.gif"/>
 
 ### Week 5
-[Slides of week5](https://docs.google.com/presentation/d/1VasprYLcgt9CrHsns_UD0mKGjKkKP6lzKt5dVO2Eym0/edit#slide=id.g73a990f4fc_3_455). 
+[Slides of week5](https://docs.google.com/presentation/d/1VasprYLcgt9CrHsns_UD0mKGjKkKP6lzKt5dVO2Eym0/edit#slide=id.g73a990f4fc_3_455)  
 [Technical report](https://www.overleaf.com/project/5e9d6b8e689b00000164ac66)
 
 # mcv-m6-2020-team3
