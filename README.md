@@ -32,7 +32,7 @@ Team 3
 
 |      Member     |           Email          |
 |:---------------:|:------------------------:|
-|  Yixiong Yang| yixiong.yang@e-campus.uab.cat |
+|  Yixiong Yang| yangyxwork@163.com |
 |     Sanket Biswas   |    sanket.biswas@e-campus.uab.cat   |
 |  Gabriela Cordova |    gabrielaelizabeth.cordova@e-campus.uab.cat    |
 | Marc Oros Casanas  |marc.oros@e-campus.uab.cat |
