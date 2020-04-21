@@ -23,10 +23,11 @@ Object Detection Mask-RCNN framework with ResNet-101 as the backbone
 [Video Stabilization]<img width="150" height="150" src="https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/image.gif"/>
 
 ### Week 5 Multi-target multi-camera tracking
-[Result of Multi-target multi-camera tracking through Color Histogram + metriclearning]
-<img width="1125" height="500" src="https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/test_track.gif">
+[Result of Multi-target multi-camera tracking through Color Histogram + metric learning]
+<img width="562" height="250" src="https://github.com/mcv-m6-video/mcv-m6-2020-team3/blob/master/img/test_track.gif">
 
-[Slides of week5](https://docs.google.com/presentation/d/1VasprYLcgt9CrHsns_UD0mKGjKkKP6lzKt5dVO2Eym0/edit#slide=id.g73a990f4fc_3_455)  
+### Final slides and report
+[Slides of week5](https://docs.google.com/presentation/d/1VasprYLcgt9CrHsns_UD0mKGjKkKP6lzKt5dVO2Eym0/edit?usp=sharing)  
 [Technical report](https://www.overleaf.com/read/nhxxqrvsrxbg)
 
 # mcv-m6-2020-team3
