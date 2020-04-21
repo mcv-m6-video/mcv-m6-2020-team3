@@ -24,7 +24,7 @@ Object Detection Mask-RCNN framework with ResNet-101 as the backbone
 
 ### Week 5
 [Slides of week5](https://docs.google.com/presentation/d/1VasprYLcgt9CrHsns_UD0mKGjKkKP6lzKt5dVO2Eym0/edit#slide=id.g73a990f4fc_3_455)  
-[Technical report](https://www.overleaf.com/project/5e9d6b8e689b00000164ac66)
+[Technical report](https://www.overleaf.com/read/nhxxqrvsrxbg)
 
 # mcv-m6-2020-team3
 Team 3
